@@ -1,0 +1,7 @@
+{
+  "name": "Alternate",
+  "description": "View yourself in alternate universes in real-time with your webcam.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

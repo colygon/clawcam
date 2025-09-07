@@ -20,7 +20,8 @@ export default createSelectorFunctions(
       apiKeys: Array(5).fill(''),
       currentApiKeyIndex: 0,
       autoCaptureInterval: 5,
-      liveMode: false
+      liveMode: false,
+      replayMode: false
     }))
   )
 )

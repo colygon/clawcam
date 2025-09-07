@@ -223,4 +223,10 @@ export const setLiveMode = mode => {
   })
 }
 
+export const setReplayMode = mode => {
+  set(state => {
+    state.replayMode = mode
+  })
+}
+
 init()

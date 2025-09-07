@@ -3,6 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 export default {
+  random: {
+    name: 'Random',
+    emoji: '🎲',
+    prompt: 'A random style will be selected for each photo.'
+  },
   renaissance: {
     name: 'Renaissance',
     emoji: '🎨',

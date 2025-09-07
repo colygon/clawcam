@@ -146,7 +146,9 @@ main {
   padding: 10px 15px;
   background: #222;
   border-bottom: 1px solid #444;
-  align-items: center;
+  align-items: flex-start;
+  position: relative;
+  z-index: 30;
 }
 .apiKeyInputs {
   display: flex;
@@ -167,6 +169,7 @@ main {
   border-radius: 4px;
   font-weight: bold;
   height: fit-content;
+  margin-top: auto;
 }
 .video {
   overflow: hidden;
@@ -461,6 +464,7 @@ main.stylesHidden .modeSelector {
   height: 80%;
   max-width: 90vw;
   filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.5));
+  z-index: 20;
 }
 .focusedPhoto img {
   width: auto;

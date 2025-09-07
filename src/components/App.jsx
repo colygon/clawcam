@@ -12,6 +12,8 @@ import {
   hideGif,
   setCustomPrompt,
   setApiKeys,
+  setApiUrl,
+  setModel,
   setAutoCaptureInterval,
   setLiveMode,
   setReplayMode
@@ -31,6 +33,8 @@ export default function App() {
   const gifInProgress = useStore.use.gifInProgress()
   const gifUrl = useStore.use.gifUrl()
   const apiKeys = useStore.use.apiKeys()
+  const apiUrl = useStore.use.apiUrl()
+  const model = useStore.use.model()
   const autoCaptureInterval = useStore.use.autoCaptureInterval()
   const liveMode = useStore.use.liveMode()
   const replayMode = useStore.use.replayMode()
@@ -46,6 +50,8 @@ export default function App() {
   const [countdown, setCountdown] = useState(null)
   const [showApiKeyInput, setShowApiKeyInput] = useState(false)
   const [localApiKeys, setLocalApiKeys] = useState(Array(5).fill(''))
+  const [localApiUrl, setLocalApiUrl] = useState('')
+  const [localModel, setLocalModel] = useState('gemini-2.5-flash-image-preview')
   const [autoCapture, setAutoCapture] = useState(false)
   const [liveImageIndex, setLiveImageIndex] = useState(0)
   const [replayImageIndex, setReplayImageIndex] = useState(0)
@@ -91,13 +97,17 @@ export default function App() {
       })
     }
     setLocalApiKeys(fullKeys)
+    setLocalApiUrl(apiUrl || '')
+    setLocalModel(model)
     if (!hasApiKey) {
       setShowApiKeyInput(true)
     }
-  }, [apiKeys, hasApiKey])
+  }, [apiKeys, hasApiKey, apiUrl, model])
 
   const handleSaveKeys = () => {
     setApiKeys(localApiKeys)
+    setApiUrl(localApiUrl)
+    setModel(localModel)
     setShowApiKeyInput(false)
   }
 
@@ -173,13 +183,11 @@ export default function App() {
       })
     }
 
-    const cycle = () => {
+    const timerFn = () => {
       if (liveMode) {
         performCapture()
+        autoCaptureTimerRef.current = setTimeout(timerFn, 500)
       } else {
-        if (isCountingDownRef.current) {
-          return
-        }
         isCountingDownRef.current = true
         let count = 5
         const tick = () => {
@@ -191,15 +199,17 @@ export default function App() {
             setCountdown(null)
             performCapture()
             isCountingDownRef.current = false
+            autoCaptureTimerRef.current = setTimeout(
+              timerFn,
+              autoCaptureInterval * 1000
+            )
           }
         }
         tick()
       }
-      const interval = liveMode ? 500 : autoCaptureInterval * 1000
-      autoCaptureTimerRef.current = setTimeout(cycle, interval)
     }
 
-    cycle() // Start the first cycle immediately.
+    timerFn()
 
     return stopTimers
   }, [
@@ -293,9 +303,21 @@ export default function App() {
                       newKeys[index] = e.target.value
                       setLocalApiKeys(newKeys)
                     }}
-                    placeholder={`Enter Gemini API key ${index + 1}`}
+                    placeholder={`API Key ${index + 1}`}
                   />
                 ))}
+                <input
+                  type="text"
+                  value={localApiUrl}
+                  onChange={e => setLocalApiUrl(e.target.value)}
+                  placeholder="Alternate API URL (optional)"
+                />
+                <input
+                  type="text"
+                  value={localModel}
+                  onChange={e => setLocalModel(e.target.value)}
+                  placeholder="Model name"
+                />
               </div>
               <button onClick={handleSaveKeys}>Save</button>
             </div>
@@ -456,6 +478,7 @@ export default function App() {
                   onMouseEnter={e =>
                     handleModeHover({key: 'custom', prompt: customPrompt}, e)
                   }
+  
                   onMouseLeave={() => handleModeHover(null)}
                 >
                   <button
@@ -518,7 +541,7 @@ export default function App() {
                           draggable={false}
                         />
                         <p className="emoji">
-                          {mode === 'custom' ? '✏️' : modes[mode].emoji}
+                          {mode === 'custom' ? '✏️' : modes[mode]?.emoji}
                         </p>
                       </button>
                     </li>

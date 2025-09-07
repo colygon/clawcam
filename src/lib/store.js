@@ -6,19 +6,21 @@ import 'immer'
 import {create} from 'zustand'
 import {immer} from 'zustand/middleware/immer'
 import {createSelectorFunctions} from 'auto-zustand-selectors-hook'
-import modes from './modes'
 
 export default createSelectorFunctions(
   create(
     immer(() => ({
       didInit: false,
       photos: [],
-      activeMode: Object.keys(modes)[0],
+      activeMode: 'random',
       gifInProgress: false,
       gifUrl: null,
       customPrompt: '',
       apiKeys: Array(5).fill(''),
+      apiUrl: '',
+      model: 'gemini-2.5-flash-image-preview',
       currentApiKeyIndex: 0,
+      randomStyleIndex: 0,
       autoCaptureInterval: 5,
       liveMode: false,
       replayMode: false

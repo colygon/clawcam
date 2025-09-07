@@ -12,7 +12,7 @@ const baseDelay = 1_233
 
 export default limitFunction(
   async ({model, prompt, inputFile, signal}) => {
-    const {apiKeys, currentApiKeyIndex} = useStore.getState()
+    const {apiKeys, currentApiKeyIndex, apiUrl} = useStore.getState()
     const validKeys = apiKeys.filter(k => k && k.trim() !== '')
 
     if (validKeys.length === 0) {
@@ -24,8 +24,12 @@ export default limitFunction(
     useStore.setState(state => {
       state.currentApiKeyIndex = state.currentApiKeyIndex + 1
     })
-    
-    const ai = new GoogleGenAI({apiKey: keyToUse})
+
+    const genAIParams = {apiKey: keyToUse}
+    if (apiUrl && apiUrl.trim() !== '') {
+      genAIParams.requestOptions = {apiEndpoint: apiUrl}
+    }
+    const ai = new GoogleGenAI(genAIParams)
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {

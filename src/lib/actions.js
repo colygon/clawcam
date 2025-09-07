@@ -12,7 +12,6 @@ import modes from './modes'
 const get = useStore.getState
 const set = useStore.setState
 const gifSize = 512
-const model = 'gemini-2.5-flash-image-preview'
 
 export const init = () => {
   if (get().didInit) {
@@ -35,6 +34,16 @@ export const init = () => {
     }
   }
 
+  const savedApiUrl = localStorage.getItem('gemini-api-url')
+  if (savedApiUrl) {
+    set({apiUrl: savedApiUrl})
+  }
+
+  const savedModel = localStorage.getItem('gemini-model')
+  if (savedModel) {
+    set({model: savedModel})
+  }
+
   const savedInterval = localStorage.getItem('auto-capture-interval')
   if (savedInterval) {
     const parsedInterval = parseInt(savedInterval, 10)
@@ -50,10 +59,19 @@ export const init = () => {
 
 export const snapPhoto = async (b64, signal) => {
   const id = crypto.randomUUID()
-  const {activeMode, customPrompt, photos} = get()
+  const {activeMode, customPrompt, photos, model, randomStyleIndex} = get()
   imageData.inputs[id] = b64
 
-  const newPhotos = [{id, mode: activeMode, isBusy: true}, ...photos]
+  let modeToUse = activeMode
+  if (modeToUse === 'random') {
+    const otherModes = Object.keys(modes).filter(k => k !== 'random')
+    modeToUse = otherModes[randomStyleIndex % otherModes.length]
+    set(state => {
+      state.randomStyleIndex = state.randomStyleIndex + 1
+    })
+  }
+
+  const newPhotos = [{id, mode: modeToUse, isBusy: true}, ...photos]
   if (newPhotos.length > 10) {
     const oldestPhoto = newPhotos.pop()
     delete imageData.inputs[oldestPhoto.id]
@@ -66,7 +84,7 @@ export const snapPhoto = async (b64, signal) => {
   try {
     const result = await gen({
       model,
-      prompt: activeMode === 'custom' ? customPrompt : modes[activeMode].prompt,
+      prompt: activeMode === 'custom' ? customPrompt : modes[modeToUse].prompt,
       inputFile: b64,
       signal
     })
@@ -108,6 +126,16 @@ export const setApiKeys = keys => {
   set(state => {
     state.apiKeys = keys
   })
+}
+
+export const setApiUrl = url => {
+  localStorage.setItem('gemini-api-url', url)
+  set({apiUrl: url})
+}
+
+export const setModel = model => {
+  localStorage.setItem('gemini-model', model)
+  set({model})
 }
 
 export const setAutoCaptureInterval = interval => {

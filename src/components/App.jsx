@@ -51,6 +51,7 @@ export default function App() {
   const genControllersRef = useRef([])
   const autoCaptureTimerRef = useRef(null)
   const countdownTimerRef = useRef(null)
+  const isCountingDownRef = useRef(false)
 
   const latestFinishedPhoto = photos.find(p => !p.isBusy)
   const hasApiKey = apiKeys.some(k => k && k.trim() !== '')
@@ -137,6 +138,7 @@ export default function App() {
     clearTimeout(autoCaptureTimerRef.current)
     clearTimeout(countdownTimerRef.current)
     setCountdown(null)
+    isCountingDownRef.current = false
     genControllersRef.current.forEach(controller => controller.abort())
     genControllersRef.current = []
   }, [])
@@ -161,6 +163,10 @@ export default function App() {
       if (liveMode) {
         performCapture()
       } else {
+        if (isCountingDownRef.current) {
+          return
+        }
+        isCountingDownRef.current = true
         let count = 5
         const tick = () => {
           if (count > 0) {
@@ -170,6 +176,7 @@ export default function App() {
           } else {
             setCountdown(null)
             performCapture()
+            isCountingDownRef.current = false
           }
         }
         tick()

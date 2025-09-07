@@ -17,7 +17,10 @@ export default createSelectorFunctions(
       gifInProgress: false,
       gifUrl: null,
       customPrompt: '',
-      apiKey: ''
+      apiKeys: Array(5).fill(''),
+      currentApiKeyIndex: 0,
+      autoCaptureInterval: 5,
+      liveMode: false
     }))
   )
 )

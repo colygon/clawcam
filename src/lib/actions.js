@@ -19,11 +19,28 @@ export const init = () => {
     return
   }
 
-  const savedApiKey = localStorage.getItem('gemini-api-key')
-  if (savedApiKey) {
-    set(state => {
-      state.apiKey = savedApiKey
-    })
+  const savedApiKeys = localStorage.getItem('gemini-api-keys')
+  if (savedApiKeys) {
+    try {
+      const parsedKeys = JSON.parse(savedApiKeys)
+      if (Array.isArray(parsedKeys)) {
+        const fullKeys = Array(5).fill('')
+        parsedKeys.slice(0, 5).forEach((key, i) => {
+          fullKeys[i] = String(key || '')
+        })
+        set({apiKeys: fullKeys})
+      }
+    } catch (e) {
+      console.error('Failed to parse API keys from localStorage', e)
+    }
+  }
+
+  const savedInterval = localStorage.getItem('auto-capture-interval')
+  if (savedInterval) {
+    const parsedInterval = parseInt(savedInterval, 10)
+    if (!isNaN(parsedInterval) && parsedInterval >= 1 && parsedInterval <= 100) {
+      set({autoCaptureInterval: parsedInterval})
+    }
   }
 
   set(state => {
@@ -31,13 +48,13 @@ export const init = () => {
   })
 }
 
-export const snapPhoto = async b64 => {
+export const snapPhoto = async (b64, signal) => {
   const id = crypto.randomUUID()
   const {activeMode, customPrompt, photos} = get()
   imageData.inputs[id] = b64
 
   const newPhotos = [{id, mode: activeMode, isBusy: true}, ...photos]
-  if (newPhotos.length > 5) {
+  if (newPhotos.length > 10) {
     const oldestPhoto = newPhotos.pop()
     delete imageData.inputs[oldestPhoto.id]
     delete imageData.outputs[oldestPhoto.id]
@@ -50,7 +67,8 @@ export const snapPhoto = async b64 => {
     const result = await gen({
       model,
       prompt: activeMode === 'custom' ? customPrompt : modes[activeMode].prompt,
-      inputFile: b64
+      inputFile: b64,
+      signal
     })
 
     if (result) {
@@ -85,11 +103,18 @@ export const setMode = mode =>
     state.activeMode = mode
   })
 
-export const setApiKey = key => {
-  localStorage.setItem('gemini-api-key', key)
+export const setApiKeys = keys => {
+  localStorage.setItem('gemini-api-keys', JSON.stringify(keys))
   set(state => {
-    state.apiKey = key
+    state.apiKeys = keys
   })
+}
+
+export const setAutoCaptureInterval = interval => {
+  const parsed = parseInt(interval, 10)
+  const newInterval = Math.max(1, Math.min(100, isNaN(parsed) ? 1 : parsed))
+  localStorage.setItem('auto-capture-interval', String(newInterval))
+  set({autoCaptureInterval: newInterval})
 }
 
 const processImageToCanvas = async (base64Data, size) => {
@@ -150,20 +175,17 @@ export const makeGif = async () => {
 
   try {
     const gif = new GIFEncoder()
-    const readyPhotos = photos.filter(photo => !photo.isBusy)
+    const readyPhotos = photos
+      .filter(photo => !photo.isBusy)
+      .slice(0, 5) // Take 5 most recent
+      .reverse() // Oldest to newest
 
     for (const photo of readyPhotos) {
-      const inputImageData = await processImageToCanvas(
-        imageData.inputs[photo.id],
-        gifSize
-      )
-      addFrameToGif(gif, inputImageData, gifSize, 333)
-
       const outputImageData = await processImageToCanvas(
         imageData.outputs[photo.id],
         gifSize
       )
-      addFrameToGif(gif, outputImageData, gifSize, 833)
+      addFrameToGif(gif, outputImageData, gifSize, 333)
     }
 
     gif.finish()
@@ -194,5 +216,11 @@ export const setCustomPrompt = prompt =>
   set(state => {
     state.customPrompt = prompt
   })
+
+export const setLiveMode = mode => {
+  set(state => {
+    state.liveMode = mode
+  })
+}
 
 init()

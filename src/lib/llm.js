@@ -12,12 +12,20 @@ const baseDelay = 1_233
 
 export default limitFunction(
   async ({model, prompt, inputFile, signal}) => {
-    const {apiKey} = useStore.getState()
-    if (!apiKey) {
+    const {apiKeys, currentApiKeyIndex} = useStore.getState()
+    const validKeys = apiKeys.filter(k => k && k.trim() !== '')
+
+    if (validKeys.length === 0) {
       console.error('Gemini API Key not set.')
       throw new Error('API Key is missing.')
     }
-    const ai = new GoogleGenAI({apiKey})
+
+    const keyToUse = validKeys[currentApiKeyIndex % validKeys.length]
+    useStore.setState(state => {
+      state.currentApiKeyIndex = state.currentApiKeyIndex + 1
+    })
+    
+    const ai = new GoogleGenAI({apiKey: keyToUse})
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {

@@ -11,7 +11,9 @@ import {
   makeGif,
   hideGif,
   setCustomPrompt,
-  setApiKey
+  setApiKeys,
+  setAutoCaptureInterval,
+  setLiveMode
 } from '../lib/actions'
 import useStore from '../lib/store'
 import imageData from '../lib/imageData'
@@ -27,7 +29,9 @@ export default function App() {
   const activeMode = useStore.use.activeMode()
   const gifInProgress = useStore.use.gifInProgress()
   const gifUrl = useStore.use.gifUrl()
-  const apiKey = useStore.use.apiKey()
+  const apiKeys = useStore.use.apiKeys()
+  const autoCaptureInterval = useStore.use.autoCaptureInterval()
+  const liveMode = useStore.use.liveMode()
 
   const [videoActive, setVideoActive] = useState(false)
   const [focusedId, setFocusedId] = useState(null)
@@ -35,29 +39,51 @@ export default function App() {
   const [hoveredMode, setHoveredMode] = useState(null)
   const [tooltipPosition, setTooltipPosition] = useState({top: 0, left: 0})
   const [showCustomPrompt, setShowCustomPrompt] = useState(false)
-  const [panelVisible, setPanelVisible] = useState(true)
+  const [stylesVisible, setStylesVisible] = useState(true)
+  const [galleryVisible, setGalleryVisible] = useState(true)
   const [countdown, setCountdown] = useState(null)
   const [showApiKeyInput, setShowApiKeyInput] = useState(false)
-  const [localApiKey, setLocalApiKey] = useState('')
+  const [localApiKeys, setLocalApiKeys] = useState(Array(5).fill(''))
   const [autoCapture, setAutoCapture] = useState(false)
+  const [liveImageIndex, setLiveImageIndex] = useState(0)
 
   const videoRef = useRef(null)
-  const isGenerating = useRef(false)
-  const isCountingDown = useRef(false)
+  const genControllersRef = useRef([])
+  const autoCaptureTimerRef = useRef(null)
+  const countdownTimerRef = useRef(null)
+
+  const latestFinishedPhoto = photos.find(p => !p.isBusy)
+  const hasApiKey = apiKeys.some(k => k && k.trim() !== '')
+  const livePhotos = photos.filter(p => !p.isBusy).slice(0, 5).reverse()
 
   useEffect(() => {
-    setLocalApiKey(apiKey)
-    if (!apiKey) {
+    if (!liveMode || livePhotos.length === 0) {
+      return
+    }
+
+    const intervalId = setInterval(() => {
+      setLiveImageIndex(prevIndex => (prevIndex + 1) % livePhotos.length)
+    }, 300)
+
+    return () => clearInterval(intervalId)
+  }, [liveMode, livePhotos.length])
+
+  useEffect(() => {
+    const fullKeys = Array(5).fill('')
+    if (apiKeys) {
+      apiKeys.slice(0, 5).forEach((key, i) => {
+        fullKeys[i] = key
+      })
+    }
+    setLocalApiKeys(fullKeys)
+    if (!hasApiKey) {
       setShowApiKeyInput(true)
     }
-  }, [apiKey])
+  }, [apiKeys, hasApiKey])
 
-  const handleSaveKey = () => {
-    const keyToSave = localApiKey.trim()
-    if (keyToSave) {
-      setApiKey(keyToSave)
-      setShowApiKeyInput(false)
-    }
+  const handleSaveKeys = () => {
+    setApiKeys(localApiKeys)
+    setShowApiKeyInput(false)
   }
 
   const startVideo = useCallback(async () => {
@@ -68,8 +94,11 @@ export default function App() {
         facingMode: {ideal: 'user'}
       })
       if (videoRef.current) {
-        setVideoActive(true)
         videoRef.current.srcObject = stream
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play()
+          setVideoActive(true)
+        }
       }
     } catch (err) {
       console.error('Error accessing webcam:', err)
@@ -80,10 +109,7 @@ export default function App() {
     startVideo()
   }, [startVideo])
 
-  const takePhoto = useCallback(async () => {
-    if (isGenerating.current) return
-    isGenerating.current = true
-
+  const takePhoto = useCallback(async signal => {
     try {
       const video = videoRef.current
       if (!video || video.readyState < 2) return
@@ -97,58 +123,79 @@ export default function App() {
       ctx.scale(-1, 1)
       ctx.drawImage(video, 0, 0, videoWidth, videoHeight, -videoWidth, 0, videoWidth, videoHeight)
 
-      await snapPhoto(canvas.toDataURL('image/jpeg'))
+      await snapPhoto(canvas.toDataURL('image/jpeg'), signal)
       setDidJustSnap(true)
       setTimeout(() => setDidJustSnap(false), 1000)
     } catch (e) {
-      console.error('Failed to take photo', e)
-    } finally {
-      isGenerating.current = false
+      if (e.name !== 'AbortError') {
+        console.error('Failed to take photo', e)
+      }
     }
   }, [])
 
+  const stopTimers = useCallback(() => {
+    clearTimeout(autoCaptureTimerRef.current)
+    clearTimeout(countdownTimerRef.current)
+    setCountdown(null)
+    genControllersRef.current.forEach(controller => controller.abort())
+    genControllersRef.current = []
+  }, [])
+
   useEffect(() => {
-    let timeoutId
-    let countdownInterval
+    if (!autoCapture || !hasApiKey || !videoActive) {
+      stopTimers()
+      return
+    }
 
-    const loop = async () => {
-      if (!autoCapture || document.hidden || isGenerating.current) {
-        timeoutId = setTimeout(loop, 4000)
-        return
-      }
+    const performCapture = () => {
+      const controller = new AbortController()
+      genControllersRef.current.push(controller)
+      takePhoto(controller.signal).finally(() => {
+        genControllersRef.current = genControllersRef.current.filter(
+          c => c !== controller
+        )
+      })
+    }
 
-      isCountingDown.current = true
-      let count = 5
-      setCountdown(count)
-
-      countdownInterval = setInterval(() => {
-        count--
-        if (count > 0) {
-          setCountdown(count)
-        } else {
-          clearInterval(countdownInterval)
-          setCountdown(null)
-          isCountingDown.current = false
-          takePhoto().finally(() => {
-            timeoutId = setTimeout(loop, 4000)
-          })
+    const cycle = () => {
+      if (liveMode) {
+        performCapture()
+      } else {
+        let count = 5
+        const tick = () => {
+          if (count > 0) {
+            setCountdown(count)
+            count--
+            countdownTimerRef.current = setTimeout(tick, 1000)
+          } else {
+            setCountdown(null)
+            performCapture()
+          }
         }
-      }, 1000)
-    }
-
-    if (autoCapture && apiKey && videoActive) {
-      loop()
-    }
-
-    return () => {
-      clearTimeout(timeoutId)
-      clearInterval(countdownInterval)
-      if (isCountingDown.current) {
-        setCountdown(null)
-        isCountingDown.current = false
+        tick()
       }
+      const interval = liveMode ? 500 : autoCaptureInterval * 1000
+      autoCaptureTimerRef.current = setTimeout(cycle, interval)
     }
-  }, [autoCapture, apiKey, videoActive, takePhoto])
+
+    cycle() // Start the first cycle immediately.
+
+    return stopTimers
+  }, [
+    autoCapture,
+    liveMode,
+    hasApiKey,
+    videoActive,
+    takePhoto,
+    autoCaptureInterval,
+    stopTimers
+  ])
+
+  const handleToggleLiveMode = () => {
+    const isStarting = !liveMode
+    setLiveMode(isStarting)
+    setAutoCapture(isStarting)
+  }
 
   const downloadGif = () => {
     const a = document.createElement('a')
@@ -176,33 +223,86 @@ export default function App() {
   }, [])
 
   return (
-    <main className={c({panelHidden: !panelVisible})}>
-      <div className="header">
-        <h1>Fractal Self</h1>
-        <button
-          onClick={() => setShowApiKeyInput(!showApiKeyInput)}
-          className="settingsBtn"
-          aria-label="API Key Settings"
-        >
-          <span className="icon">key</span>
-        </button>
-      </div>
+    <main
+      className={c({
+        stylesHidden: !stylesVisible,
+        galleryHidden: !galleryVisible
+      })}
+    >
+      <button
+        onClick={handleToggleLiveMode}
+        className={c('liveButton', {active: liveMode})}
+        disabled={!hasApiKey}
+      >
+        Live
+      </button>
+
+      <button
+        onClick={() => setShowApiKeyInput(!showApiKeyInput)}
+        className="settingsBtn"
+        aria-label="API Key Settings"
+      >
+        <span className="icon">key</span>
+      </button>
+
       {showApiKeyInput && (
         <div className="apiKeyBar">
-          <input
-            type="password"
-            value={localApiKey}
-            onChange={e => setLocalApiKey(e.target.value)}
-            placeholder="Enter your Gemini API key"
-          />
-          <button onClick={handleSaveKey}>Save</button>
+          <div className="apiKeyInputs">
+            {localApiKeys.map((key, index) => (
+              <input
+                key={index}
+                type="password"
+                value={key}
+                onChange={e => {
+                  const newKeys = [...localApiKeys]
+                  newKeys[index] = e.target.value
+                  setLocalApiKeys(newKeys)
+                }}
+                placeholder={`Enter Gemini API key ${index + 1}`}
+              />
+            ))}
+          </div>
+          <button onClick={handleSaveKeys}>Save</button>
         </div>
       )}
+
       <div
-        className="video"
+        className={c('video', {split: autoCapture && !liveMode})}
         onClick={() => (gifUrl ? hideGif() : setFocusedId(null))}
       >
-        {countdown && <div className="countdown">{countdown}</div>}
+        {liveMode && livePhotos.length > 0 ? (
+          <div className="liveGifView">
+            <img
+              src={imageData.outputs[livePhotos[liveImageIndex].id]}
+              alt="Live generated art"
+            />
+          </div>
+        ) : (
+          <video
+            ref={videoRef}
+            muted
+            autoPlay
+            playsInline
+            disablePictureInPicture="true"
+          />
+        )}
+
+        {autoCapture && !liveMode && (
+          <div
+            className={c('generatedPhotoView', {
+              isBusy: photos.length > 0 && photos[0].isBusy
+            })}
+          >
+            {latestFinishedPhoto && (
+              <img
+                src={imageData.outputs[latestFinishedPhoto.id]}
+                alt="Last generated"
+              />
+            )}
+          </div>
+        )}
+
+        {countdown && <div className="countdown" key={countdown}>{countdown}</div>}
         {showCustomPrompt && (
           <div className="customPrompt">
             <button
@@ -230,48 +330,67 @@ export default function App() {
             />
           </div>
         )}
-        <video
-          ref={videoRef}
-          muted
-          autoPlay
-          playsInline
-          disablePictureInPicture="true"
-        />
         {didJustSnap && <div className="flash" />}
 
         {videoActive && (
           <>
             <button
-              className="panelToggle"
-              onClick={() => setPanelVisible(!panelVisible)}
+              className="galleryToggle"
+              onClick={() => setGalleryVisible(!galleryVisible)}
             >
-              <span className="icon">
-                {panelVisible ? 'visibility_off' : 'visibility'}
-              </span>
+              <span className="icon">photo_library</span>
             </button>
-            <div className="videoControls">
-              <div className="shutterControls">
-                <button
-                  onClick={() => setAutoCapture(!autoCapture)}
-                  className={c('autoButton', {active: autoCapture})}
-                  disabled={!apiKey}
-                  aria-pressed={autoCapture}
-                >
-                  <span className="icon">
-                    {autoCapture ? 'stop_circle' : 'play_circle'}
-                  </span>
-                  {autoCapture ? 'Stop' : 'Auto'}
-                </button>
-                <button
-                  onClick={takePhoto}
-                  className="shutter"
-                  disabled={!apiKey}
-                  aria-label="Take Photo"
-                >
-                  <span className="icon">camera</span>
-                </button>
+            <button
+              className="panelToggle"
+              onClick={() => setStylesVisible(!stylesVisible)}
+            >
+              <span className="icon">palette</span>
+            </button>
+            {!liveMode && (
+              <div className="videoControls">
+                <div className="shutterControls">
+                  <button
+                    onClick={() => setAutoCapture(!autoCapture)}
+                    className={c('autoButton', {active: autoCapture})}
+                    disabled={!hasApiKey}
+                    aria-pressed={autoCapture}
+                  >
+                    <span className="icon">
+                      {autoCapture ? 'stop_circle' : 'play_circle'}
+                    </span>
+                    {autoCapture ? 'Stop' : 'Auto'}
+                  </button>
+                  {autoCapture && (
+                    <div className="intervalControl">
+                      <input
+                        type="number"
+                        min="1"
+                        max="100"
+                        step="1"
+                        value={autoCaptureInterval}
+                        onChange={e =>
+                          setAutoCaptureInterval(
+                            parseInt(e.target.value, 10) || 1
+                          )
+                        }
+                        aria-label="Auto-capture interval in seconds"
+                      />
+                      <span>s</span>
+                    </div>
+                  )}
+                  {!autoCapture && (
+                    <button
+                      onClick={() => takePhoto()}
+                      className="shutter"
+                      disabled={!hasApiKey}
+                      aria-label="Take Photo"
+                    >
+                      <span className="icon">camera</span>
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </>
         )}
 
@@ -295,43 +414,42 @@ export default function App() {
             )}
           </div>
         )}
-      </div>
-
-      {videoActive && (
-        <ul className="modeSelector">
-          <li
-            key="custom"
-            onMouseEnter={e =>
-              handleModeHover({key: 'custom', prompt: customPrompt}, e)
-            }
-            onMouseLeave={() => handleModeHover(null)}
-          >
-            <button
-              className={c({active: activeMode === 'custom'})}
-              onClick={() => {
-                setMode('custom')
-                setShowCustomPrompt(true)
-              }}
-            >
-              <span>✏️</span> <p>Custom</p>
-            </button>
-          </li>
-          {Object.entries(modes).map(([key, {name, emoji, prompt}]) => (
+        {videoActive && (
+          <ul className="modeSelector">
             <li
-              key={key}
-              onMouseEnter={e => handleModeHover({key, prompt}, e)}
+              key="custom"
+              onMouseEnter={e =>
+                handleModeHover({key: 'custom', prompt: customPrompt}, e)
+              }
               onMouseLeave={() => handleModeHover(null)}
             >
               <button
-                onClick={() => setMode(key)}
-                className={c({active: key === activeMode})}
+                className={c({active: activeMode === 'custom'})}
+                onClick={() => {
+                  setMode('custom')
+                  setShowCustomPrompt(true)
+                }}
               >
-                <span>{emoji}</span> <p>{name}</p>
+                <span>✏️</span> <p>Custom</p>
               </button>
             </li>
-          ))}
-        </ul>
-      )}
+            {Object.entries(modes).map(([key, {name, emoji, prompt}]) => (
+              <li
+                key={key}
+                onMouseEnter={e => handleModeHover({key, prompt}, e)}
+                onMouseLeave={() => handleModeHover(null)}
+              >
+                <button
+                  onClick={() => setMode(key)}
+                  className={c({active: key === activeMode})}
+                >
+                  <span>{emoji}</span> <p>{name}</p>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       <div className="results">
         <ul>
@@ -375,7 +493,7 @@ export default function App() {
                   <p>
                     <span className="icon">auto_awesome</span>
                   </p>
-                  {apiKey
+                  {hasApiKey
                     ? 'Take a photo or press Auto to begin'
                     : 'Please set your API key to start'}
                 </li>
@@ -392,7 +510,7 @@ export default function App() {
         )}
       </div>
 
-      {hoveredMode && panelVisible && (
+      {hoveredMode && stylesVisible && (
         <div
           className={c('tooltip', {isFirst: hoveredMode.key === 'custom'})}
           role="tooltip"

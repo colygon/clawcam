@@ -1,5 +1,5 @@
 {
-  "name": "Alternate",
+  "name": "Fractal Self",
   "description": "View yourself in alternate universes in real-time with your webcam.",
   "requestFramePermissions": [
     "camera"

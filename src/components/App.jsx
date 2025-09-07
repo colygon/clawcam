@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
 */
-import {useRef, useState, useCallback} from 'react'
+import {useRef, useState, useCallback, useEffect} from 'react'
 import c from 'clsx'
 import {
   snapPhoto,
@@ -10,7 +10,8 @@ import {
   deletePhoto,
   makeGif,
   hideGif,
-  setCustomPrompt
+  setCustomPrompt,
+  setApiKey
 } from '../lib/actions'
 import useStore from '../lib/store'
 import imageData from '../lib/imageData'
@@ -26,57 +27,128 @@ export default function App() {
   const activeMode = useStore.use.activeMode()
   const gifInProgress = useStore.use.gifInProgress()
   const gifUrl = useStore.use.gifUrl()
+  const apiKey = useStore.use.apiKey()
+
   const [videoActive, setVideoActive] = useState(false)
-  const [didInitVideo, setDidInitVideo] = useState(false)
   const [focusedId, setFocusedId] = useState(null)
   const [didJustSnap, setDidJustSnap] = useState(false)
   const [hoveredMode, setHoveredMode] = useState(null)
   const [tooltipPosition, setTooltipPosition] = useState({top: 0, left: 0})
   const [showCustomPrompt, setShowCustomPrompt] = useState(false)
+  const [panelVisible, setPanelVisible] = useState(true)
+  const [countdown, setCountdown] = useState(null)
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false)
+  const [localApiKey, setLocalApiKey] = useState('')
+  const [autoCapture, setAutoCapture] = useState(false)
+
   const videoRef = useRef(null)
+  const isGenerating = useRef(false)
+  const isCountingDown = useRef(false)
 
-  const startVideo = async () => {
-    setDidInitVideo(true)
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: {width: {ideal: 1920}, height: {ideal: 1080}},
-      audio: false,
-      facingMode: {ideal: 'user'}
-    })
-    setVideoActive(true)
-    videoRef.current.srcObject = stream
+  useEffect(() => {
+    setLocalApiKey(apiKey)
+    if (!apiKey) {
+      setShowApiKeyInput(true)
+    }
+  }, [apiKey])
 
-    const {width, height} = stream.getVideoTracks()[0].getSettings()
-    const squareSize = Math.min(width, height)
-    canvas.width = squareSize
-    canvas.height = squareSize
+  const handleSaveKey = () => {
+    const keyToSave = localApiKey.trim()
+    if (keyToSave) {
+      setApiKey(keyToSave)
+      setShowApiKeyInput(false)
+    }
   }
 
-  const takePhoto = () => {
-    const video = videoRef.current
-    const {videoWidth, videoHeight} = video
-    const squareSize = canvas.width
-    const sourceSize = Math.min(videoWidth, videoHeight)
-    const sourceX = (videoWidth - sourceSize) / 2
-    const sourceY = (videoHeight - sourceSize) / 2
+  const startVideo = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {width: {ideal: 1920}, height: {ideal: 1080}},
+        audio: false,
+        facingMode: {ideal: 'user'}
+      })
+      if (videoRef.current) {
+        setVideoActive(true)
+        videoRef.current.srcObject = stream
+      }
+    } catch (err) {
+      console.error('Error accessing webcam:', err)
+    }
+  }, [])
 
-    ctx.clearRect(0, 0, squareSize, squareSize)
-    ctx.setTransform(1, 0, 0, 1, 0, 0)
-    ctx.scale(-1, 1)
-    ctx.drawImage(
-      video,
-      sourceX,
-      sourceY,
-      sourceSize,
-      sourceSize,
-      -squareSize,
-      0,
-      squareSize,
-      squareSize
-    )
-    snapPhoto(canvas.toDataURL('image/jpeg'))
-    setDidJustSnap(true)
-    setTimeout(() => setDidJustSnap(false), 1000)
-  }
+  useEffect(() => {
+    startVideo()
+  }, [startVideo])
+
+  const takePhoto = useCallback(async () => {
+    if (isGenerating.current) return
+    isGenerating.current = true
+
+    try {
+      const video = videoRef.current
+      if (!video || video.readyState < 2) return
+
+      const {videoWidth, videoHeight} = video
+      canvas.width = videoWidth
+      canvas.height = videoHeight
+
+      ctx.clearRect(0, 0, videoWidth, videoHeight)
+      ctx.setTransform(1, 0, 0, 1, 0, 0)
+      ctx.scale(-1, 1)
+      ctx.drawImage(video, 0, 0, videoWidth, videoHeight, -videoWidth, 0, videoWidth, videoHeight)
+
+      await snapPhoto(canvas.toDataURL('image/jpeg'))
+      setDidJustSnap(true)
+      setTimeout(() => setDidJustSnap(false), 1000)
+    } catch (e) {
+      console.error('Failed to take photo', e)
+    } finally {
+      isGenerating.current = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let timeoutId
+    let countdownInterval
+
+    const loop = async () => {
+      if (!autoCapture || document.hidden || isGenerating.current) {
+        timeoutId = setTimeout(loop, 4000)
+        return
+      }
+
+      isCountingDown.current = true
+      let count = 5
+      setCountdown(count)
+
+      countdownInterval = setInterval(() => {
+        count--
+        if (count > 0) {
+          setCountdown(count)
+        } else {
+          clearInterval(countdownInterval)
+          setCountdown(null)
+          isCountingDown.current = false
+          takePhoto().finally(() => {
+            timeoutId = setTimeout(loop, 4000)
+          })
+        }
+      }, 1000)
+    }
+
+    if (autoCapture && apiKey && videoActive) {
+      loop()
+    }
+
+    return () => {
+      clearTimeout(timeoutId)
+      clearInterval(countdownInterval)
+      if (isCountingDown.current) {
+        setCountdown(null)
+        isCountingDown.current = false
+      }
+    }
+  }, [autoCapture, apiKey, videoActive, takePhoto])
 
   const downloadGif = () => {
     const a = document.createElement('a')
@@ -104,11 +176,33 @@ export default function App() {
   }, [])
 
   return (
-    <main>
+    <main className={c({panelHidden: !panelVisible})}>
+      <div className="header">
+        <h1>Fractal Self</h1>
+        <button
+          onClick={() => setShowApiKeyInput(!showApiKeyInput)}
+          className="settingsBtn"
+          aria-label="API Key Settings"
+        >
+          <span className="icon">key</span>
+        </button>
+      </div>
+      {showApiKeyInput && (
+        <div className="apiKeyBar">
+          <input
+            type="password"
+            value={localApiKey}
+            onChange={e => setLocalApiKey(e.target.value)}
+            placeholder="Enter your Gemini API key"
+          />
+          <button onClick={handleSaveKey}>Save</button>
+        </div>
+      )}
       <div
         className="video"
         onClick={() => (gifUrl ? hideGif() : setFocusedId(null))}
       >
+        {countdown && <div className="countdown">{countdown}</div>}
         {showCustomPrompt && (
           <div className="customPrompt">
             <button
@@ -144,53 +238,41 @@ export default function App() {
           disablePictureInPicture="true"
         />
         {didJustSnap && <div className="flash" />}
-        {!videoActive && (
-          <button className="startButton" onClick={startVideo}>
-            <h1>📸 GemBooth</h1>
-            <p>{didInitVideo ? 'One sec…' : 'Tap anywhere to start webcam'}</p>
-          </button>
-        )}
 
         {videoActive && (
-          <div className="videoControls">
-            <button onClick={takePhoto} className="shutter">
-              <span className="icon">camera</span>
+          <>
+            <button
+              className="panelToggle"
+              onClick={() => setPanelVisible(!panelVisible)}
+            >
+              <span className="icon">
+                {panelVisible ? 'visibility_off' : 'visibility'}
+              </span>
             </button>
-
-            <ul className="modeSelector">
-              <li
-                key="custom"
-                onMouseEnter={e =>
-                  handleModeHover({key: 'custom', prompt: customPrompt}, e)
-                }
-                onMouseLeave={() => handleModeHover(null)}
-              >
+            <div className="videoControls">
+              <div className="shutterControls">
                 <button
-                  className={c({active: activeMode === 'custom'})}
-                  onClick={() => {
-                    setMode('custom')
-                    setShowCustomPrompt(true)
-                  }}
+                  onClick={() => setAutoCapture(!autoCapture)}
+                  className={c('autoButton', {active: autoCapture})}
+                  disabled={!apiKey}
+                  aria-pressed={autoCapture}
                 >
-                  <span>✏️</span> <p>Custom</p>
+                  <span className="icon">
+                    {autoCapture ? 'stop_circle' : 'play_circle'}
+                  </span>
+                  {autoCapture ? 'Stop' : 'Auto'}
                 </button>
-              </li>
-              {Object.entries(modes).map(([key, {name, emoji, prompt}]) => (
-                <li
-                  key={key}
-                  onMouseEnter={e => handleModeHover({key, prompt}, e)}
-                  onMouseLeave={() => handleModeHover(null)}
+                <button
+                  onClick={takePhoto}
+                  className="shutter"
+                  disabled={!apiKey}
+                  aria-label="Take Photo"
                 >
-                  <button
-                    onClick={() => setMode(key)}
-                    className={c({active: key === activeMode})}
-                  >
-                    <span>{emoji}</span> <p>{name}</p>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
+                  <span className="icon">camera</span>
+                </button>
+              </div>
+            </div>
+          </>
         )}
 
         {(focusedId || gifUrl) && (
@@ -214,6 +296,42 @@ export default function App() {
           </div>
         )}
       </div>
+
+      {videoActive && (
+        <ul className="modeSelector">
+          <li
+            key="custom"
+            onMouseEnter={e =>
+              handleModeHover({key: 'custom', prompt: customPrompt}, e)
+            }
+            onMouseLeave={() => handleModeHover(null)}
+          >
+            <button
+              className={c({active: activeMode === 'custom'})}
+              onClick={() => {
+                setMode('custom')
+                setShowCustomPrompt(true)
+              }}
+            >
+              <span>✏️</span> <p>Custom</p>
+            </button>
+          </li>
+          {Object.entries(modes).map(([key, {name, emoji, prompt}]) => (
+            <li
+              key={key}
+              onMouseEnter={e => handleModeHover({key, prompt}, e)}
+              onMouseLeave={() => handleModeHover(null)}
+            >
+              <button
+                onClick={() => setMode(key)}
+                className={c({active: key === activeMode})}
+              >
+                <span>{emoji}</span> <p>{name}</p>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <div className="results">
         <ul>
@@ -255,9 +373,11 @@ export default function App() {
             : videoActive && (
                 <li className="empty" key="empty">
                   <p>
-                    👉 <span className="icon">camera</span>
+                    <span className="icon">auto_awesome</span>
                   </p>
-                  Snap a photo to get started.
+                  {apiKey
+                    ? 'Take a photo or press Auto to begin'
+                    : 'Please set your API key to start'}
                 </li>
               )}
         </ul>
@@ -272,7 +392,7 @@ export default function App() {
         )}
       </div>
 
-      {hoveredMode && (
+      {hoveredMode && panelVisible && (
         <div
           className={c('tooltip', {isFirst: hoveredMode.key === 'custom'})}
           role="tooltip"

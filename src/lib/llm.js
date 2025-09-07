@@ -4,42 +4,42 @@
 */
 import {GoogleGenAI, Modality} from '@google/genai'
 import {limitFunction} from 'p-limit'
+import useStore from './store'
 
 const timeoutMs = 123_333
 const maxRetries = 5
 const baseDelay = 1_233
-const ai = new GoogleGenAI({apiKey: process.env.GEMINI_API_KEY})
 
 export default limitFunction(
   async ({model, prompt, inputFile, signal}) => {
+    const {apiKey} = useStore.getState()
+    if (!apiKey) {
+      console.error('Gemini API Key not set.')
+      throw new Error('API Key is missing.')
+    }
+    const ai = new GoogleGenAI({apiKey})
+
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => reject(new Error('timeout')), timeoutMs)
         )
 
+        const parts = [{text: prompt}]
+        if (inputFile) {
+          parts.push({
+            inlineData: {
+              data: inputFile.split(',')[1],
+              mimeType: 'image/jpeg'
+            }
+          })
+        }
+
         const modelPromise = ai.models.generateContent(
           {
             model,
+            contents: {parts},
             config: {responseModalities: [Modality.TEXT, Modality.IMAGE]},
-            contents: [
-              {
-                role: 'user',
-                parts: [
-                  {text: prompt},
-                  ...(inputFile
-                    ? [
-                        {
-                          inlineData: {
-                            data: inputFile.split(',')[1],
-                            mimeType: 'image/jpeg'
-                          }
-                        }
-                      ]
-                    : [])
-                ]
-              }
-            ],
             safetySettings
           },
           {signal}

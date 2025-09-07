@@ -16,7 +16,8 @@ export default createSelectorFunctions(
       activeMode: Object.keys(modes)[0],
       gifInProgress: false,
       gifUrl: null,
-      customPrompt: ''
+      customPrompt: '',
+      apiKey: ''
     }))
   )
 )

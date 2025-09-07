@@ -12,14 +12,18 @@ import modes from './modes'
 const get = useStore.getState
 const set = useStore.setState
 const gifSize = 512
-const model =
-  window.self !== window.top
-    ? 'gemini-2.5-flash-image-preview'
-    : 'gemini-2.0-flash-preview-image-generation'
+const model = 'gemini-2.5-flash-image-preview'
 
 export const init = () => {
   if (get().didInit) {
     return
+  }
+
+  const savedApiKey = localStorage.getItem('gemini-api-key')
+  if (savedApiKey) {
+    set(state => {
+      state.apiKey = savedApiKey
+    })
   }
 
   set(state => {
@@ -29,26 +33,42 @@ export const init = () => {
 
 export const snapPhoto = async b64 => {
   const id = crypto.randomUUID()
-  const {activeMode, customPrompt} = get()
+  const {activeMode, customPrompt, photos} = get()
   imageData.inputs[id] = b64
 
+  const newPhotos = [{id, mode: activeMode, isBusy: true}, ...photos]
+  if (newPhotos.length > 5) {
+    const oldestPhoto = newPhotos.pop()
+    delete imageData.inputs[oldestPhoto.id]
+    delete imageData.outputs[oldestPhoto.id]
+  }
   set(state => {
-    state.photos.unshift({id, mode: activeMode, isBusy: true})
+    state.photos = newPhotos
   })
 
-  const result = await gen({
-    model,
-    prompt: activeMode === 'custom' ? customPrompt : modes[activeMode].prompt,
-    inputFile: b64
-  })
+  try {
+    const result = await gen({
+      model,
+      prompt: activeMode === 'custom' ? customPrompt : modes[activeMode].prompt,
+      inputFile: b64
+    })
 
-  imageData.outputs[id] = result
-
-  set(state => {
-    state.photos = state.photos.map(photo =>
-      photo.id === id ? {...photo, isBusy: false} : photo
-    )
-  })
+    if (result) {
+      imageData.outputs[id] = result
+      set(state => {
+        state.photos = state.photos.map(photo =>
+          photo.id === id ? {...photo, isBusy: false} : photo
+        )
+      })
+    } else {
+      // If result is undefined (e.g. from an aborted request), remove the photo
+      deletePhoto(id)
+    }
+  } catch (e) {
+    console.error('Error generating photo', e)
+    // On error, remove the placeholder
+    deletePhoto(id)
+  }
 }
 
 export const deletePhoto = id => {
@@ -64,6 +84,13 @@ export const setMode = mode =>
   set(state => {
     state.activeMode = mode
   })
+
+export const setApiKey = key => {
+  localStorage.setItem('gemini-api-key', key)
+  set(state => {
+    state.apiKey = key
+  })
+}
 
 const processImageToCanvas = async (base64Data, size) => {
   const img = new Image()

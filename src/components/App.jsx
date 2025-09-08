@@ -14,6 +14,7 @@ import {
   setApiKeys,
   setApiUrl,
   setModel,
+  setApiProvider,
   setAutoCaptureInterval,
   setLiveMode,
   setReplayMode
@@ -33,6 +34,7 @@ export default function App() {
   const gifInProgress = useStore.use.gifInProgress()
   const gifUrl = useStore.use.gifUrl()
   const apiKeys = useStore.use.apiKeys()
+  const apiProvider = useStore.use.apiProvider()
   const apiUrl = useStore.use.apiUrl()
   const model = useStore.use.model()
   const autoCaptureInterval = useStore.use.autoCaptureInterval()
@@ -41,7 +43,6 @@ export default function App() {
 
   const [videoActive, setVideoActive] = useState(false)
   const [focusedId, setFocusedId] = useState(null)
-  const [didJustSnap, setDidJustSnap] = useState(false)
   const [hoveredMode, setHoveredMode] = useState(null)
   const [tooltipPosition, setTooltipPosition] = useState({top: 0, left: 0})
   const [showCustomPrompt, setShowCustomPrompt] = useState(false)
@@ -49,7 +50,8 @@ export default function App() {
   const [galleryVisible, setGalleryVisible] = useState(true)
   const [countdown, setCountdown] = useState(null)
   const [showApiKeyInput, setShowApiKeyInput] = useState(false)
-  const [localApiKeys, setLocalApiKeys] = useState(Array(5).fill(''))
+  const [localApiKeys, setLocalApiKeys] = useState([''])
+  const [localApiProvider, setLocalApiProvider] = useState('gemini')
   const [localApiUrl, setLocalApiUrl] = useState('')
   const [localModel, setLocalModel] = useState('gemini-2.5-flash-image-preview')
   const [autoCapture, setAutoCapture] = useState(false)
@@ -90,25 +92,39 @@ export default function App() {
   }, [replayMode, replayPhotos.length])
 
   useEffect(() => {
-    const fullKeys = Array(5).fill('')
-    if (apiKeys) {
-      apiKeys.slice(0, 5).forEach((key, i) => {
-        fullKeys[i] = key
-      })
-    }
-    setLocalApiKeys(fullKeys)
+    setLocalApiKeys(apiKeys.length > 0 ? apiKeys : [''])
+    setLocalApiProvider(apiProvider)
     setLocalApiUrl(apiUrl || '')
     setLocalModel(model)
     if (!hasApiKey) {
       setShowApiKeyInput(true)
     }
-  }, [apiKeys, hasApiKey, apiUrl, model])
+  }, [apiKeys, hasApiKey, apiProvider, apiUrl, model])
 
   const handleSaveKeys = () => {
     setApiKeys(localApiKeys)
-    setApiUrl(localApiUrl)
+    setApiProvider(localApiProvider)
+    if (localApiProvider === 'custom') {
+      setApiUrl(localApiUrl)
+    } else {
+      setApiUrl('')
+    }
     setModel(localModel)
     setShowApiKeyInput(false)
+  }
+
+  const handleAddApiKey = () => {
+    if (localApiKeys.length < 10) {
+      setLocalApiKeys(prevKeys => [...prevKeys, ''])
+    }
+  }
+
+  const handleRemoveApiKey = indexToRemove => {
+    if (localApiKeys.length > 1) {
+      setLocalApiKeys(prevKeys =>
+        prevKeys.filter((_, index) => index !== indexToRemove)
+      )
+    }
   }
 
   const startVideo = useCallback(async () => {
@@ -149,8 +165,6 @@ export default function App() {
       ctx.drawImage(video, 0, 0, videoWidth, videoHeight, -videoWidth, 0, videoWidth, videoHeight)
 
       await snapPhoto(canvas.toDataURL('image/jpeg'), signal)
-      setDidJustSnap(true)
-      setTimeout(() => setDidJustSnap(false), 1000)
     } catch (e) {
       if (e.name !== 'AbortError') {
         console.error('Failed to take photo', e)
@@ -294,24 +308,57 @@ export default function App() {
             <div className="apiKeyBar">
               <div className="apiKeyInputs">
                 {localApiKeys.map((key, index) => (
-                  <input
-                    key={index}
-                    type="password"
-                    value={key}
-                    onChange={e => {
-                      const newKeys = [...localApiKeys]
-                      newKeys[index] = e.target.value
-                      setLocalApiKeys(newKeys)
-                    }}
-                    placeholder={`API Key ${index + 1}`}
-                  />
+                  <div className="apiKeyInputWrapper" key={index}>
+                    <input
+                      type="password"
+                      value={key}
+                      onChange={e => {
+                        const newKeys = [...localApiKeys]
+                        newKeys[index] = e.target.value
+                        setLocalApiKeys(newKeys)
+                      }}
+                      placeholder={`API Key ${index + 1}`}
+                    />
+                    {localApiKeys.length > 1 ? (
+                      <button
+                        className="removeApiKeyBtn"
+                        onClick={() => handleRemoveApiKey(index)}
+                        aria-label="Remove API Key"
+                      >
+                        <span className="icon">close</span>
+                      </button>
+                    ) : null}
+                  </div>
                 ))}
-                <input
-                  type="text"
-                  value={localApiUrl}
-                  onChange={e => setLocalApiUrl(e.target.value)}
-                  placeholder="Alternate API URL (optional)"
-                />
+                {localApiKeys.length < 10 && (
+                  <button className="addApiKeyBtn" onClick={handleAddApiKey}>
+                    + Add API Key
+                  </button>
+                )}
+                <p className="apiKeyHint">
+                  Add additional API keys to resolve issues with API rate
+                  limits.
+                </p>
+                <div className="apiProviderSelector">
+                  <label htmlFor="api-provider-select">Provider:</label>
+                  <select
+                    id="api-provider-select"
+                    value={localApiProvider}
+                    onChange={e => setLocalApiProvider(e.target.value)}
+                  >
+                    <option value="gemini">Gemini</option>
+                    <option value="openrouter">OpenRouter</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                </div>
+                {localApiProvider === 'custom' && (
+                  <input
+                    type="text"
+                    value={localApiUrl}
+                    onChange={e => setLocalApiUrl(e.target.value)}
+                    placeholder="Custom API URL"
+                  />
+                )}
                 <input
                   type="text"
                   value={localModel}
@@ -327,21 +374,20 @@ export default function App() {
             className={c('video', {split: autoCapture && !liveMode})}
             onClick={() => (gifUrl ? hideGif() : setFocusedId(null))}
           >
-            {liveMode && livePhotos.length > 0 ? (
+            <video
+              ref={videoRef}
+              muted
+              autoPlay
+              playsInline
+              disablePictureInPicture="true"
+            />
+            {liveMode && livePhotos.length > 0 && (
               <div className="liveGifView">
                 <img
                   src={imageData.outputs[livePhotos[liveImageIndex].id]}
                   alt="Live generated art"
                 />
               </div>
-            ) : (
-              <video
-                ref={videoRef}
-                muted
-                autoPlay
-                playsInline
-                disablePictureInPicture="true"
-              />
             )}
 
             {autoCapture && !liveMode && (
@@ -387,7 +433,6 @@ export default function App() {
                 />
               </div>
             )}
-            {didJustSnap && <div className="flash" />}
 
             {videoActive && (
               <>

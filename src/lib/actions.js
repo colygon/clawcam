@@ -22,16 +22,28 @@ export const init = () => {
   if (savedApiKeys) {
     try {
       const parsedKeys = JSON.parse(savedApiKeys)
-      if (Array.isArray(parsedKeys)) {
-        const fullKeys = Array(5).fill('')
-        parsedKeys.slice(0, 5).forEach((key, i) => {
-          fullKeys[i] = String(key || '')
-        })
+      if (Array.isArray(parsedKeys) && parsedKeys.length > 0) {
+        const fullKeys = parsedKeys
+          .slice(0, 10)
+          .map(key => String(key || ''))
         set({apiKeys: fullKeys})
+      } else {
+        set({apiKeys: ['']})
       }
     } catch (e) {
       console.error('Failed to parse API keys from localStorage', e)
+      set({apiKeys: ['']})
     }
+  } else {
+    set({apiKeys: ['']})
+  }
+
+  const savedApiProvider = localStorage.getItem('gemini-api-provider')
+  if (
+    savedApiProvider &&
+    ['gemini', 'openrouter', 'custom'].includes(savedApiProvider)
+  ) {
+    set({apiProvider: savedApiProvider})
   }
 
   const savedApiUrl = localStorage.getItem('gemini-api-url')
@@ -126,6 +138,11 @@ export const setApiKeys = keys => {
   set(state => {
     state.apiKeys = keys
   })
+}
+
+export const setApiProvider = provider => {
+  localStorage.setItem('gemini-api-provider', provider)
+  set({apiProvider: provider})
 }
 
 export const setApiUrl = url => {

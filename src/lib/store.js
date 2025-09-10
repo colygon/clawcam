@@ -12,6 +12,8 @@ export default createSelectorFunctions(
     immer(() => ({
       didInit: false,
       photos: [],
+      favorites: [],
+      selectedPhotos: [],
       activeMode: 'random',
       gifInProgress: false,
       gifUrl: null,
@@ -23,8 +25,13 @@ export default createSelectorFunctions(
       currentApiKeyIndex: 0,
       randomStyleIndex: 0,
       autoCaptureInterval: 5,
+      burstCount: 1,
       liveMode: false,
-      replayMode: false
+      replayMode: false,
+      useOpenRouter: false,
+      openRouterApiKey: '',
+      openRouterModel: 'google/gemini-2.5-flash-image-preview',
+      lastError: null
     }))
   )
 )

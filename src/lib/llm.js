@@ -9,6 +9,155 @@ import useStore from './store'
 const timeoutMs = 123_333
 const maxRetries = 5
 const baseDelay = 1_233
+const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1/chat/completions'
+
+async function generateWithGeminiDirect({model, prompt, inputFile, signal}) {
+  const {apiKeys, currentApiKeyIndex, apiUrl} = useStore.getState()
+  const validKeys = apiKeys.filter(k => k && k.trim() !== '')
+
+  if (validKeys.length === 0) {
+    console.error('Gemini API Key not set.')
+    throw new Error('API Key is missing.')
+  }
+
+  const keyToUse = validKeys[currentApiKeyIndex % validKeys.length]
+  useStore.setState(state => {
+    state.currentApiKeyIndex = state.currentApiKeyIndex + 1
+  })
+
+  const genAIParams = {apiKey: keyToUse}
+  if (apiUrl && apiUrl.trim() !== '') {
+    genAIParams.requestOptions = {apiEndpoint: apiUrl}
+  }
+  const ai = new GoogleGenAI(genAIParams)
+
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('timeout')), timeoutMs)
+  )
+
+  const parts = [{text: prompt}]
+  if (inputFile) {
+    parts.push({
+      inlineData: {
+        data: inputFile.split(',')[1],
+        mimeType: 'image/jpeg'
+      }
+    })
+  }
+
+  const modelPromise = ai.models.generateContent(
+    {
+      model,
+      contents: {parts},
+      config: {responseModalities: [Modality.TEXT, Modality.IMAGE]},
+      safetySettings
+    },
+    {signal}
+  )
+
+  const response = await Promise.race([modelPromise, timeoutPromise])
+
+  if (!response.candidates || response.candidates.length === 0) {
+    throw new Error('No candidates in response')
+  }
+
+  const inlineDataPart = response.candidates[0].content.parts.find(
+    p => p.inlineData
+  )
+  if (!inlineDataPart) {
+    throw new Error('No inline data found in response')
+  }
+
+  return 'data:image/png;base64,' + inlineDataPart.inlineData.data
+}
+
+async function generateWithOpenRouter({model, prompt, inputFile, signal}) {
+  const {openRouterApiKey} = useStore.getState()
+
+  if (!openRouterApiKey || openRouterApiKey.trim() === '') {
+    throw new Error('OpenRouter API Key is missing.')
+  }
+
+  const headers = {
+    'Authorization': `Bearer ${openRouterApiKey}`,
+    'Content-Type': 'application/json'
+  }
+
+  const messages = []
+  
+  if (inputFile) {
+    messages.push({
+      role: 'user',
+      content: [
+        {
+          type: 'text',
+          text: prompt
+        },
+        {
+          type: 'image_url',
+          image_url: {
+            url: inputFile
+          }
+        }
+      ]
+    })
+  } else {
+    messages.push({
+      role: 'user',
+      content: prompt
+    })
+  }
+
+  const payload = {
+    model: model,
+    messages: messages,
+    modalities: ['image', 'text']
+  }
+
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+
+  if (signal) {
+    signal.addEventListener('abort', () => controller.abort())
+  }
+
+  try {
+    const response = await fetch(OPENROUTER_BASE_URL, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    })
+
+    clearTimeout(timeoutId)
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`OpenRouter API error: ${response.status} ${response.statusText} - ${errorText}`)
+    }
+
+    const result = await response.json()
+
+    if (!result.choices || result.choices.length === 0) {
+      throw new Error('No choices in OpenRouter response')
+    }
+
+    const message = result.choices[0].message
+    if (!message.images || message.images.length === 0) {
+      throw new Error('No images in OpenRouter response')
+    }
+
+    const imageData = message.images[0].image_url.url
+    if (!imageData || !imageData.startsWith('data:image/')) {
+      throw new Error('Invalid image data in OpenRouter response')
+    }
+
+    return imageData
+  } catch (error) {
+    clearTimeout(timeoutId)
+    throw error
+  }
+}
 
 const safetySettings = [
   'HARM_CATEGORY_HATE_SPEECH',
@@ -100,7 +249,7 @@ async function generateWithFetch({
     headers['Authorization'] = `Bearer ${key}`
     if (provider === 'openrouter') {
       headers['HTTP-Referer'] = location.origin
-      headers['X-Title'] = 'Fractal Self'
+      headers['X-Title'] = 'Banana Cam'
     }
   }
 
@@ -160,8 +309,7 @@ async function generateWithFetch({
 
 export default limitFunction(
   async ({model, prompt, inputFile, signal}) => {
-    const {apiKeys, currentApiKeyIndex, apiProvider, apiUrl} =
-      useStore.getState()
+    const {apiKeys, apiProvider, apiUrl} = useStore.getState()
     const validKeys = apiKeys.filter(k => k && k.trim() !== '')
 
     if (validKeys.length === 0) {
@@ -169,56 +317,94 @@ export default limitFunction(
       throw new Error('API Key is missing.')
     }
 
-    const keyToUse = validKeys[currentApiKeyIndex % validKeys.length]
+    // Try each API key once before giving up
+    const maxAttemptsPerKey = Math.max(1, Math.floor(maxRetries / validKeys.length))
+    
+    // Reset to 0 to ensure we start from the first valid key
     useStore.setState(state => {
-      state.currentApiKeyIndex = state.currentApiKeyIndex + 1
+      state.currentApiKeyIndex = 0
     })
+    let currentKeyIndex = 0
+    
+    for (let keyAttempt = 0; keyAttempt < validKeys.length; keyAttempt++) {
+      const keyToUse = validKeys[currentKeyIndex]
+      console.log(`Trying API key ${currentKeyIndex + 1}/${validKeys.length}`)
 
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      try {
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('timeout')), timeoutMs)
-        )
+      for (let attempt = 0; attempt < maxAttemptsPerKey; attempt++) {
+        try {
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('timeout')), timeoutMs)
+          )
 
-        let modelPromise
-        if (apiProvider === 'gemini') {
-          modelPromise = generateWithSdk({
-            key: keyToUse,
-            model,
-            prompt,
-            inputFile,
-            signal
+          let modelPromise
+          if (apiProvider === 'gemini') {
+            modelPromise = generateWithSdk({
+              key: keyToUse,
+              model,
+              prompt,
+              inputFile,
+              signal
+            })
+          } else {
+            modelPromise = generateWithFetch({
+              provider: apiProvider,
+              apiUrl,
+              key: keyToUse,
+              model,
+              prompt,
+              inputFile,
+              signal
+            })
+          }
+
+          const result = await Promise.race([modelPromise, timeoutPromise])
+          
+          // Success! Update the current key index for next time
+          useStore.setState(state => {
+            state.currentApiKeyIndex = currentKeyIndex
           })
-        } else {
-          modelPromise = generateWithFetch({
-            provider: apiProvider,
-            apiUrl,
-            key: keyToUse,
-            model,
-            prompt,
-            inputFile,
-            signal
-          })
-        }
+          
+          return result
+        } catch (error) {
+          if (signal?.aborted || error.name === 'AbortError') {
+            return
+          }
 
-        const result = await Promise.race([modelPromise, timeoutPromise])
-        return result
-      } catch (error) {
-        if (signal?.aborted || error.name === 'AbortError') {
-          return
-        }
+          const errorMsg = error.message.toLowerCase()
+          const isRateLimit = errorMsg.includes('quota') || 
+                              errorMsg.includes('limit') || 
+                              errorMsg.includes('rate') ||
+                              errorMsg.includes('429')
 
-        if (attempt === maxRetries - 1) {
-          throw error
-        }
+          if (isRateLimit) {
+            console.warn(`Rate limit hit on API key ${currentKeyIndex + 1}, trying next key...`)
+            break // Try next key immediately
+          }
 
-        const delay = baseDelay * 2 ** attempt
-        await new Promise(res => setTimeout(res, delay))
-        console.warn(
-          `Attempt ${attempt + 1} failed, retrying after ${delay}ms...`
-        )
+          if (attempt === maxAttemptsPerKey - 1) {
+            // Last attempt with this key failed
+            break
+          }
+
+          const delay = baseDelay * 2 ** attempt
+          await new Promise(res => setTimeout(res, delay))
+          console.warn(
+            `Attempt ${attempt + 1} with key ${currentKeyIndex + 1} failed, retrying after ${delay}ms...`,
+            error.message
+          )
+        }
       }
+
+      // Move to next key
+      currentKeyIndex = (currentKeyIndex + 1) % validKeys.length
     }
+
+    // All keys exhausted
+    useStore.setState(state => {
+      state.currentApiKeyIndex = currentKeyIndex
+    })
+    
+    throw new Error(`All ${validKeys.length} API keys failed. Please check your keys or try again later.`)
   },
   {concurrency: 2}
 )

@@ -1,6 +1,6 @@
 {
-  "name": "Fractal Self",
-  "description": "View yourself in alternate universes in real-time with your webcam.",
+  "name": "Banana Cam",
+  "description": "Transform yourself with AI magic in real-time using your webcam. Visit www.banana.cam",
   "requestFramePermissions": [
     "camera"
   ]

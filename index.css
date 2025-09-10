@@ -776,7 +776,7 @@ main:not(.stylesHidden) .bottomBarControls {
   
   /* Move styles down when gallery is hidden but styles are visible */
   main.galleryHidden:not(.stylesHidden) .modeRows {
-    bottom: 10px !important;
+    bottom: 0px !important;
   }
   
   main:not(.stylesHidden) .modeRows::-webkit-scrollbar {

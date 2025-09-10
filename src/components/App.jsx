@@ -395,6 +395,36 @@ export default function App() {
     init()
   }, [])
 
+  // Add keyboard navigation for focused photo mode
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (focusedId && !gifUrl) {
+        switch (event.key) {
+          case 'ArrowLeft':
+            event.preventDefault()
+            goToPreviousPhoto()
+            break
+          case 'ArrowRight':
+            event.preventDefault()
+            goToNextPhoto()
+            break
+          case 'Escape':
+            event.preventDefault()
+            setFocusedId(null)
+            break
+        }
+      }
+    }
+
+    if (focusedId && !gifUrl) {
+      document.addEventListener('keydown', handleKeyDown)
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [focusedId, gifUrl, goToPreviousPhoto, goToNextPhoto])
+
   const handleToggleLiveMode = async () => {
     const isStarting = !liveMode
     setLiveMode(isStarting)

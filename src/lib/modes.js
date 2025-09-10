@@ -173,6 +173,12 @@ export default {
     prompt: 'Make the person in the photo look like they have a huge beard.'
   },
 
+  suit: {
+    name: 'Formal Suit',
+    emoji: '👔',
+    prompt: 'Transform the person into wearing an impeccably tailored, high-end formal business suit. For males: sharp charcoal or navy three-piece suit with crisp white dress shirt, elegant silk tie, pocket square, polished leather dress shoes, and cufflinks. For females: sophisticated pantsuit or skirt suit in charcoal, navy, or black with tailored blazer, professional blouse, and elegant heels. Preserve their exact facial features and natural expression while keeping the background completely unchanged. The suit should look expensive, perfectly fitted, and professionally pressed with attention to details like proper lapels, button stance, and fabric drape.'
+  },
+
   avatar: {
     name: 'Avatar',
     emoji: '🧿',
@@ -402,6 +408,79 @@ export default {
     name: 'Wrestling Mat',
     emoji: '🤼',
     prompt: 'Place the person on a wrestling mat in competitive wrestling gear demonstrating a wrestling move. Preserve their facial features while adding gymnasium lighting, mat boundaries, and that focused atmosphere of a wrestling tournament with athletic intensity.'
+  },
+
+  // Fun & Entertainment Emojis
+  dancer: {
+    name: 'Dancing Queen',
+    emoji: '💃',
+    prompt: 'Transform the person into an elegant dancer wearing a stunning flowing red dress, captured mid-dance move with graceful posture. The dress should be vibrant red with flowing fabric that captures movement, paired with dance shoes. Place them in an elegant ballroom or dance studio with warm lighting and polished wooden floors. Preserve their exact facial features and add an expression of joy and grace while dancing.'
+  },
+
+  rockstar: {
+    name: 'Rock Star',
+    emoji: '🎸',
+    prompt: 'Transform the person into a rock star on stage holding an electric guitar, wearing edgy rock clothing like leather jacket, ripped jeans, and rock boots. Place them on a concert stage with dramatic stage lighting, smoke effects, and concert crowds in the background. Preserve their facial features while adding an energetic rock star attitude and expression.'
+  },
+
+  detective: {
+    name: 'Detective',
+    emoji: '🕵️',
+    prompt: 'Transform the person into a classic detective wearing a tan trench coat, fedora hat, and holding a magnifying glass. The style should evoke film noir with dramatic lighting and shadows. Place them on a foggy city street at night with street lamps creating atmospheric lighting. Preserve their facial features while adding a mysterious, investigative expression.'
+  },
+
+  pirate: {
+    name: 'Pirate Captain',
+    emoji: '🏴‍☠️',
+    prompt: 'Transform the person into a swashbuckling pirate captain wearing a tricorn hat, long coat, boots, and eye patch. Add a cutlass sword and place them on the deck of a pirate ship with ocean waves, ship rigging, and a dramatic sunset backdrop. Preserve their facial features while adding an adventurous, commanding pirate expression.'
+  },
+
+  wizard: {
+    name: 'Wizard',
+    emoji: '🧙',
+    prompt: 'Transform the person into a powerful wizard wearing flowing robes, pointed hat, and holding a magical staff with glowing crystal. Place them in a mystical setting with floating magical orbs, ancient stone architecture, and magical lighting effects. Preserve their facial features while adding a wise, magical expression with sparkles and ethereal glow around them.'
+  },
+
+  ninja: {
+    name: 'Ninja',
+    emoji: '🥷',
+    prompt: 'Transform the person into a stealthy ninja wearing traditional dark ninja outfit with hood and mask, holding katana swords. Place them in a moonlit Japanese garden with bamboo, traditional architecture, and dramatic shadows. Preserve their facial features (visible eyes) while adding a focused, stealthy expression and dynamic action pose.'
+  },
+
+  vampire: {
+    name: 'Vampire',
+    emoji: '🧛',
+    prompt: 'Transform the person into an elegant vampire wearing a dramatic black cape with red lining, formal gothic attire, and subtle fangs. Place them in a gothic castle interior with candles, stone walls, and dramatic lighting. Preserve their facial features while adding pale skin, intense red eyes, and a mysterious, aristocratic expression.'
+  },
+
+  mermaid: {
+    name: 'Mermaid',
+    emoji: '🧜‍♀️',
+    prompt: 'Transform the person into a beautiful mermaid with shimmering scales, seashell top, and flowing hair with ocean waves. Place them in an underwater paradise with coral reefs, tropical fish, and ethereal underwater lighting. Preserve their facial features while adding an enchanting expression and magical underwater atmosphere.'
+  },
+
+  superhero: {
+    name: 'Superhero',
+    emoji: '🦸',
+    prompt: 'Transform the person into a superhero wearing a sleek, colorful superhero costume with cape flowing in the wind. Place them on a city rooftop at sunset with dramatic lighting and city skyline background. Preserve their facial features while adding a confident, heroic expression and dynamic power pose with cape billowing.'
+  },
+
+  angel: {
+    name: 'Angel',
+    emoji: '👼',
+    prompt: 'Transform the person into an ethereal angel with large, beautiful white wings, flowing white robes, and golden halo. Place them in a heavenly setting with soft clouds, golden light rays, and celestial atmosphere. Preserve their facial features while adding a serene, peaceful expression and divine glowing aura.'
+  },
+
+  cowboy: {
+    name: 'Cowboy',
+    emoji: '🤠',
+    prompt: 'Transform the person into a classic cowboy wearing a wide-brimmed hat, leather vest, chaps, boots with spurs, and bandana. Place them in the Wild West with desert landscape, cacti, wooden buildings, and sunset lighting. Preserve their facial features while adding a rugged, confident cowboy expression.'
+  },
+
+  astronaut: {
+    name: 'Astronaut',
+    emoji: '👨‍🚀',
+    prompt: 'Transform the person into an astronaut wearing a detailed space suit with helmet reflecting stars and planets. Place them floating in space with Earth, stars, galaxies, and spacecraft in the background. Preserve their facial features visible through the helmet visor while adding an expression of wonder and exploration.'
   }
 
 }

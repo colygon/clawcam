@@ -391,6 +391,14 @@ export default function App() {
           <button className={c('liveButton', {active: autoCapture})}>
             Live
           </button>
+          {latestFinishedPhoto && imageData.outputs[latestFinishedPhoto.id] && (
+            <div className="streamFullscreenImage">
+              <img 
+                src={imageData.outputs[latestFinishedPhoto.id]} 
+                alt="Latest generated image" 
+              />
+            </div>
+          )}
           <div className="pipWebcam">
             <video
               ref={pipVideoRef}

@@ -308,13 +308,13 @@ export default function App() {
     }
 
     if (cameraMode === 'TIMER') {
+      setIsCountingDown(true)
       let count = 5
       setCountdown(count)
-      setIsCountingDown(true)
 
       const timerTick = () => {
-        if (count > 1) {
-          count--
+        count--
+        if (count > 0) {
           setCountdown(count)
           countdownTimerRef.current = setTimeout(timerTick, 1000)
         } else {

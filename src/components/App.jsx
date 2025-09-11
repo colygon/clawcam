@@ -1044,11 +1044,11 @@ function ErrorToast({ error, onClose }) {
   useEffect(() => {
     if (error) {
       setIsVisible(true)
-      // Auto-dismiss after 5 seconds
+      // Auto-dismiss after 3 seconds
       const timer = setTimeout(() => {
         setIsVisible(false)
         setTimeout(onClose, 300) // Wait for fade out animation
-      }, 5000)
+      }, 3000)
       return () => clearTimeout(timer)
     }
   }, [error, onClose])

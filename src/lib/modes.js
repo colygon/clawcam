@@ -12,7 +12,7 @@ export default {
   sf: {
     name: 'SF',
     emoji: '🏠',
-    prompt: 'Place the person or people in Alamo Square with the iconic "Painted Ladies" Victorian houses in the background. It is crucial to preserve their exact facial features, expressions, and character. Dress them in modern, casual San Francisco style; their outfits should not include skinny jeans, turtlenecks, or crossbody purses for women. The lighting should be that of a clear afternoon, casting soft shadows. Apply all changes consistently to everyone.',
+    prompt: 'Place the person or people in Alamo Square with the iconic "Painted Ladies" Victorian houses in the background. It is crucial to preserve their exact facial features, expressions, and character. Dress them in stylish gold sequin bomber jackets that catch the light beautifully, paired with modern San Francisco casual attire underneath. The sequins should shimmer and reflect the afternoon light. The lighting should be that of a clear afternoon, casting soft shadows and creating beautiful reflections on the gold sequins. Apply all changes consistently to everyone.',
     category: 'location',
     postcardText: 'THE PAINTED LADIES'
   },

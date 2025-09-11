@@ -1703,9 +1703,16 @@ main.galleryHidden .results {
     left: 0;
     right: 0;
     z-index: 5;
-    background: rgba(0, 0, 0, 0.7);
     padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* New wrapper for modes and shutter bar to apply background */
+  .iphoneCameraModesAndShutterWrapper {
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
     gap: 5px;
+    width: 100%;
   }
 
   /* Timer Display when active */
@@ -1796,7 +1803,7 @@ main.galleryHidden .results {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 20px;
+    padding: 0px 20px 10px;
   }
   
   /* Photo Preview - In flex flow */

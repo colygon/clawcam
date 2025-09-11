@@ -795,89 +795,92 @@ export default function App() {
               </div>
             )}
 
-            {/* Camera Modes Row */}
-            <div className="iphoneCameraModes">
-              <button
-                className={c("iphoneModeBtn", {active: cameraMode === 'NONSTOP'})}
-                onClick={() => setCameraMode('NONSTOP')}
-              >
-                NONSTOP
-              </button>
-              <button
-                className={c("iphoneModeBtn", {active: cameraMode === 'PHOTO'})}
-                onClick={() => setCameraMode('PHOTO')}
-              >
-                PHOTO
-              </button>
-              <button
-                className={c("iphoneModeBtn", {active: cameraMode === 'POSTCARD'})}
-                onClick={() => setCameraMode('POSTCARD')}
-              >
-                POSTCARD
-              </button>
-              <button
-                className={c("iphoneModeBtn", {active: cameraMode === 'TIMER'})}
-                onClick={() => setCameraMode('TIMER')}
-              >
-                TIMER
-              </button>
-            </div>
-
-            {/* Bottom Camera Controls Bar */}
-            <div className="iphoneCameraBottom">
-              {/* Photo Preview (Left) */}
-              <div className={photos.length > 0 ? "iphonePhotoPreview" : "iphonePhotoPreview-placeholder"}>
-                {busyPhotos.length > 0 && (
-                  <div className="queue-counter">{busyPhotos.length}</div>
-                )}
-                {photos.length > 0 && (
-                  latestFinishedPhoto && imageData.outputs[latestFinishedPhoto.id] ? (
-                    <button
-                      className="iphonePreviewBtn"
-                      onClick={() => setGalleryVisible(!galleryVisible)}
-                      aria-label="Toggle gallery"
-                    >
-                      <img
-                        src={imageData.outputs[latestFinishedPhoto.id]}
-                        alt="Latest photo - tap to open gallery"
-                        className="iphonePreviewImg"
-                      />
-                    </button>
-                  ) : (
-                    <button
-                      className="iphonePreviewEmpty"
-                      onClick={() => setGalleryVisible(!galleryVisible)}
-                      aria-label="Toggle gallery"
-                    >
-                      <span className="icon">photo</span>
-                    </button>
-                  )
-                )}
-              </div>
-
-              {/* Camera Shutter (Center) */}
-              <div className="iphoneCameraShutter">
+            {/* Wrapper for modes and shutter to have background */}
+            <div className="iphoneCameraModesAndShutterWrapper">
+              {/* Camera Modes Row */}
+              <div className="iphoneCameraModes">
                 <button
-                  onClick={handlePhotoButtonClick}
-                  className={c("iphoneShutterBtn", {recording: autoCapture || isCountingDown})}
-                  aria-label={autoCapture || isCountingDown ? "Stop capture" : "Take Photo"}
+                  className={c("iphoneModeBtn", {active: cameraMode === 'NONSTOP'})}
+                  onClick={() => setCameraMode('NONSTOP')}
                 >
-                  <div className={c("iphoneShutterInner", {recording: autoCapture || isCountingDown})}></div>
+                  NONSTOP
+                </button>
+                <button
+                  className={c("iphoneModeBtn", {active: cameraMode === 'PHOTO'})}
+                  onClick={() => setCameraMode('PHOTO')}
+                >
+                  PHOTO
+                </button>
+                <button
+                  className={c("iphoneModeBtn", {active: cameraMode === 'POSTCARD'})}
+                  onClick={() => setCameraMode('POSTCARD')}
+                >
+                  POSTCARD
+                </button>
+                <button
+                  className={c("iphoneModeBtn", {active: cameraMode === 'TIMER'})}
+                  onClick={() => setCameraMode('TIMER')}
+                >
+                  TIMER
                 </button>
               </div>
 
-              {/* Camera Flip Button (Right) */}
-              {!isDesktop && (
-                <div className="iphoneCameraSwitch">
+              {/* Bottom Camera Controls Bar */}
+              <div className="iphoneCameraBottom">
+                {/* Photo Preview (Left) */}
+                <div className={photos.length > 0 ? "iphonePhotoPreview" : "iphonePhotoPreview-placeholder"}>
+                  {busyPhotos.length > 0 && (
+                    <div className="queue-counter">{busyPhotos.length}</div>
+                  )}
+                  {photos.length > 0 && (
+                    latestFinishedPhoto && imageData.outputs[latestFinishedPhoto.id] ? (
+                      <button
+                        className="iphonePreviewBtn"
+                        onClick={() => setGalleryVisible(!galleryVisible)}
+                        aria-label="Toggle gallery"
+                      >
+                        <img
+                          src={imageData.outputs[latestFinishedPhoto.id]}
+                          alt="Latest photo - tap to open gallery"
+                          className="iphonePreviewImg"
+                        />
+                      </button>
+                    ) : (
+                      <button
+                        className="iphonePreviewEmpty"
+                        onClick={() => setGalleryVisible(!galleryVisible)}
+                        aria-label="Toggle gallery"
+                      >
+                        <span className="icon">photo</span>
+                      </button>
+                    )
+                  )}
+                </div>
+
+                {/* Camera Shutter (Center) */}
+                <div className="iphoneCameraShutter">
                   <button
-                    className="iphoneSwitchBtn"
-                    onClick={handleCameraToggle}
-                    aria-label={'Switch camera'}
+                    onClick={handlePhotoButtonClick}
+                    className={c("iphoneShutterBtn", {recording: autoCapture || isCountingDown})}
+                    aria-label={autoCapture || isCountingDown ? "Stop capture" : "Take Photo"}
                   >
-                    <span className="icon">cameraswitch</span>
+                    <div className={c("iphoneShutterInner", {recording: autoCapture || isCountingDown})}></div>
                   </button>
                 </div>
-              )}
+
+                {/* Camera Flip Button (Right) */}
+                {!isDesktop && (
+                  <div className="iphoneCameraSwitch">
+                    <button
+                      className="iphoneSwitchBtn"
+                      onClick={handleCameraToggle}
+                      aria-label={'Switch camera'}
+                    >
+                      <span className="icon">cameraswitch</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

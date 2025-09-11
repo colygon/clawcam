@@ -2,252 +2,94 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
 */
-import {GIFEncoder, quantize, applyPalette} from 'gifenc'
+import gifenc from 'gifenc';
 import useStore from './store'
 import imageData from './imageData'
 import gen from './llm'
 import modes from './modes'
+import { db } from './db'
 
+const { GIFEncoder, quantize, applyPalette } = gifenc;
 const get = useStore.getState
 const set = useStore.setState
 const gifSize = 512
 
-// Load photos from localStorage
-const loadPhotos = () => {
+// Load photos from localStorage (metadata) and IndexedDB (image data)
+const loadPhotos = async () => {
   try {
     const savedPhotos = localStorage.getItem('fractal-photos')
-    const savedInputs = localStorage.getItem('fractal-inputs')  
-    const savedOutputs = localStorage.getItem('fractal-outputs')
-    
-    console.log('LoadPhotos: Attempting to restore from localStorage')
-    console.log('Has savedPhotos:', !!savedPhotos)
-    console.log('Has savedInputs:', !!savedInputs)
-    console.log('Has savedOutputs:', !!savedOutputs)
     
     if (savedPhotos) {
       const photos = JSON.parse(savedPhotos)
-      console.log(`LoadPhotos: Restoring ${photos.length} photos`)
-      
-      // Restore photos array
+      console.log(`LoadPhotos: Restoring ${photos.length} photo metadata`)
       set({photos})
       
-      // Restore inputs if available
-      if (savedInputs) {
-        try {
-          const inputs = JSON.parse(savedInputs)
-          console.log(`LoadPhotos: Restoring ${Object.keys(inputs).length} inputs`)
-          Object.assign(imageData.inputs, inputs)
-        } catch (e) {
-          console.error('Failed to parse saved inputs', e)
-        }
-      }
+      // Restore inputs and outputs from IndexedDB
+      const inputs = await db.getAll(db.STORES.INPUTS)
+      const outputs = await db.getAll(db.STORES.OUTPUTS)
       
-      // Restore outputs if available  
-      if (savedOutputs) {
-        try {
-          const outputs = JSON.parse(savedOutputs)
-          console.log(`LoadPhotos: Restoring ${Object.keys(outputs).length} outputs`)
-          Object.assign(imageData.outputs, outputs)
-        } catch (e) {
-          console.error('Failed to parse saved outputs', e)
-        }
-      }
+      Object.assign(imageData.inputs, inputs)
+      Object.assign(imageData.outputs, outputs)
       
-      console.log('LoadPhotos: Restoration complete')
-      console.log('Final inputs count:', Object.keys(imageData.inputs).length)
-      console.log('Final outputs count:', Object.keys(imageData.outputs).length)
+      console.log(`LoadPhotos: Restored ${Object.keys(inputs).length} inputs and ${Object.keys(outputs).length} outputs from IndexedDB.`)
     } else {
       console.log('LoadPhotos: No saved photos found')
     }
   } catch (e) {
-    console.error('Failed to load photos from localStorage', e)
-    // Clear corrupted data
+    console.error('Failed to load photos from storage', e)
+    // Clear potentially corrupted metadata
     localStorage.removeItem('fractal-photos')
-    localStorage.removeItem('fractal-inputs')
-    localStorage.removeItem('fractal-outputs')
   }
 }
 
-// Save photos to localStorage
+// Save photo metadata to localStorage
 export const savePhotos = () => {
   try {
     const {photos} = get()
-    
-    // Check if we have valid data before saving
-    const validPhotos = photos.filter(p => {
-      if (p.isBusy) return true // Keep busy photos
-      return imageData.outputs[p.id] && imageData.outputs[p.id].startsWith('data:image/')
-    })
-    
-    // Only save if we have valid data
-    if (validPhotos.length > 0 || photos.some(p => p.isBusy)) {
-      localStorage.setItem('fractal-photos', JSON.stringify(photos))
-      localStorage.setItem('fractal-inputs', JSON.stringify(imageData.inputs))
-      localStorage.setItem('fractal-outputs', JSON.stringify(imageData.outputs))
-    }
+    // Only save the metadata array to localStorage. Image data is saved to IndexedDB.
+    localStorage.setItem('fractal-photos', JSON.stringify(photos))
   } catch (e) {
-    console.error('Failed to save photos to localStorage', e)
-    if (e.name === 'QuotaExceededError') {
-      console.warn('localStorage quota exceeded. Keeping images in memory only.')
-      // Don't corrupt existing data if we can't save
-      return
-    }
+    console.error('Failed to save photo metadata to localStorage', e)
   }
 }
 
-export const init = () => {
+export const init = async () => {
   if (get().didInit) {
     return
   }
 
-  const savedApiKeys = localStorage.getItem('gemini-api-keys')
-  if (savedApiKeys) {
-    try {
-      const parsedKeys = JSON.parse(savedApiKeys)
-      if (Array.isArray(parsedKeys) && parsedKeys.length > 0) {
-        const fullKeys = parsedKeys
-          .slice(0, 10)
-          .map(key => String(key || ''))
-        set({apiKeys: fullKeys})
-      } else {
-        set({apiKeys: ['']})
-      }
-    } catch (e) {
-      console.error('Failed to parse API keys from localStorage', e)
-      set({apiKeys: ['']})
-    }
-  } else {
-    set({apiKeys: ['']})
-  }
-
   // Load saved photos
-  loadPhotos()
+  await loadPhotos()
 
-  // Clean up old ungenerated photos (photos without outputs that aren't busy) - but be more lenient
+  // Clean up old ungenerated photos (photos without outputs that aren't busy)
   setTimeout(() => {
     const {photos} = get()
-    console.log(`Cleanup: Starting with ${photos.length} photos`)
-    console.log('Available inputs:', Object.keys(imageData.inputs).length)
-    console.log('Available outputs:', Object.keys(imageData.outputs).length)
-    
     const photosToKeep = photos.filter(photo => {
-      // Always keep if busy (still processing)
-      if (photo.isBusy) {
-        console.log(`Keeping photo ${photo.id}: still busy`)
-        return true
-      }
+      if (photo.isBusy) return true
       
-      // Check if output exists and is valid
       const output = imageData.outputs[photo.id]
-      if (!output) {
-        // No output at all - but only remove if it's been a while (more than 30 seconds old)
-        const photoAge = Date.now() - (parseInt(photo.id.split('-')[0]) || 0)
-        if (photoAge > 30000) {
-          console.log(`Removing photo ${photo.id}: no output data and older than 30s`)
+      if (!output || typeof output !== 'string' || !output.startsWith('data:image/')) {
+        const photoAge = Date.now() - (parseInt(photo.id.split('-')[0], 10) || 0)
+        if (photoAge > 30000) { // If older than 30s with no valid output
+          console.log(`Removing stale/invalid photo ${photo.id}`)
           return false
-        } else {
-          console.log(`Keeping photo ${photo.id}: no output but still recent (${photoAge}ms old)`)
-          return true
         }
       }
-      
-      if (typeof output !== 'string') {
-        // Output is not a string - corrupted
-        console.log(`Removing photo ${photo.id}: output is not a string`)
-        return false
-      }
-      
-      if (output.length < 50) {
-        // Output is too short to be a valid image - corrupted
-        console.log(`Removing photo ${photo.id}: output too short (${output.length} chars)`)
-        return false
-      }
-      
-      if (!output.startsWith('data:image/')) {
-        // Output doesn't look like an image - corrupted
-        console.log(`Removing photo ${photo.id}: output doesn't start with data:image/`)
-        return false
-      }
-      
-      // Keep all other photos (they have valid image data)
-      console.log(`Keeping photo ${photo.id}: valid image data`)
       return true
     })
     
     if (photosToKeep.length !== photos.length) {
       console.log(`Cleaning up ${photos.length - photosToKeep.length} ungenerated/corrupt photos`)
-      set(state => {
-        state.photos = photosToKeep
-      })
+      set({photos: photosToKeep})
       
-      // Also clean up orphaned imageData
       const validIds = new Set(photosToKeep.map(p => p.id))
-      Object.keys(imageData.inputs).forEach(id => {
-        if (!validIds.has(id)) {
-          delete imageData.inputs[id]
-        }
-      })
-      Object.keys(imageData.outputs).forEach(id => {
-        if (!validIds.has(id)) {
-          delete imageData.outputs[id]
-        }
-      })
+      Object.keys(imageData.inputs).forEach(id => { if (!validIds.has(id)) { delete imageData.inputs[id]; db.del(db.STORES.INPUTS, id) }})
+      Object.keys(imageData.outputs).forEach(id => { if (!validIds.has(id)) { delete imageData.outputs[id]; db.del(db.STORES.OUTPUTS, id) }})
       
       savePhotos()
     }
-  }, 1000) // Small delay to ensure everything is loaded
+  }, 1000)
 
-  const savedApiProvider = localStorage.getItem('gemini-api-provider')
-  if (
-    savedApiProvider &&
-    ['gemini', 'openrouter', 'custom'].includes(savedApiProvider)
-  ) {
-    set({apiProvider: savedApiProvider})
-  }
-
-  const savedApiUrl = localStorage.getItem('gemini-api-url')
-  if (savedApiUrl) {
-    set({apiUrl: savedApiUrl})
-  }
-
-  const savedModel = localStorage.getItem('gemini-model')
-  if (savedModel) {
-    set({model: savedModel})
-  }
-
-  const savedInterval = localStorage.getItem('auto-capture-interval')
-  if (savedInterval) {
-    const parsedInterval = parseInt(savedInterval, 10)
-    if (!isNaN(parsedInterval) && parsedInterval >= 1 && parsedInterval <= 100) {
-      set({autoCaptureInterval: parsedInterval})
-    }
-  }
-
-  const savedBurstCount = localStorage.getItem('burst-count')
-  if (savedBurstCount) {
-    const parsedCount = parseInt(savedBurstCount, 10)
-    if (!isNaN(parsedCount) && parsedCount >= 1 && parsedCount <= 10) {
-      set({burstCount: parsedCount})
-    }
-  }
-
-  // Load OpenRouter settings
-  const savedUseOpenRouter = localStorage.getItem('use-openrouter')
-  if (savedUseOpenRouter === 'true') {
-    set({useOpenRouter: true})
-  }
-
-  const savedOpenRouterApiKey = localStorage.getItem('openrouter-api-key')
-  if (savedOpenRouterApiKey) {
-    set({openRouterApiKey: savedOpenRouterApiKey})
-  }
-
-  const savedOpenRouterModel = localStorage.getItem('openrouter-model')
-  if (savedOpenRouterModel) {
-    set({openRouterModel: savedOpenRouterModel})
-  }
-
-  // Load favorites
   const savedFavorites = localStorage.getItem('fractal-favorites')
   if (savedFavorites) {
     try {
@@ -260,14 +102,12 @@ export const init = () => {
     }
   }
 
-  set(state => {
-    state.didInit = true
-  })
+  set({didInit: true})
 }
 
 export const snapPhoto = async (b64, signal) => {
   const id = crypto.randomUUID()
-  const {activeMode, customPrompt, photos, model, randomStyleIndex} = get()
+  const {activeMode, customPrompt, photos, model, randomStyleIndex, cameraMode} = get()
   
   console.log('Starting photo generation', { 
     id, 
@@ -278,6 +118,7 @@ export const snapPhoto = async (b64, signal) => {
   })
   
   imageData.inputs[id] = b64
+  await db.set(db.STORES.INPUTS, id, b64).catch(e => console.error("Failed to save input to DB", e))
 
   let modeToUse = activeMode
   if (modeToUse === 'random') {
@@ -287,18 +128,41 @@ export const snapPhoto = async (b64, signal) => {
       state.randomStyleIndex = state.randomStyleIndex + 1
     })
   }
-
+  
   const newPhotos = [{id, mode: modeToUse, isBusy: true}, ...photos]
   set(state => {
     state.photos = newPhotos
   })
-  savePhotos() // Save to localStorage
+  savePhotos() // Save metadata to localStorage
 
   try {
+    const style = modes[modeToUse];
+    let finalPrompt = activeMode === 'custom' ? customPrompt : style?.prompt;
+
+    if (cameraMode === 'POSTCARD') {
+        const { postcardText, category } = style || {};
+
+        if (postcardText) {
+            if (category === 'location') {
+                if (modeToUse === 'sf') { // Special case for Full House font style
+                    finalPrompt += ` Turn this into a vintage postcard with the text "${postcardText}" written in a large, bold font reminiscent of the logo from the TV show 'Full House'.`;
+                } else {
+                    finalPrompt += ` Turn this into a vintage postcard with the text "${postcardText}" written elegantly on it in a large, bold font.`;
+                }
+            } else if (category === 'sports') {
+                finalPrompt += ` Turn this into a collectible sports trading card, like a baseball card. The card should feature the text "${postcardText}" prominently in a large, bold font.`;
+            } else {
+                // For all other categories, make them a fun postcard too.
+                finalPrompt += ` Turn this into a fun, thematic postcard with the text "${postcardText}" written creatively on it in a large, bold font.`;
+            }
+        }
+    }
+
+
     console.log('Calling LLM generation', { id, modeToUse, model })
     const result = await gen({
       model,
-      prompt: activeMode === 'custom' ? customPrompt : modes[modeToUse].prompt,
+      prompt: finalPrompt,
       inputFile: b64,
       signal
     })
@@ -312,13 +176,25 @@ export const snapPhoto = async (b64, signal) => {
 
     if (result && result.startsWith('data:image/')) {
       imageData.outputs[id] = result
+      await db.set(db.STORES.OUTPUTS, id, result).catch(e => console.error("Failed to save output to DB", e))
+      
+      // Add to justSavedIds for UI feedback
+      set(state => {
+        state.justSavedIds.push(id)
+      })
+      setTimeout(() => {
+        set(state => {
+          state.justSavedIds = state.justSavedIds.filter(savedId => savedId !== id)
+        })
+      }, 2500) // Remove after 2.5 seconds
+
       set(state => {
         state.photos = state.photos.map(photo =>
           photo.id === id ? {...photo, isBusy: false} : photo
         )
       })
       savePhotos() // Save to localStorage when photo is completed
-      console.log('Photo generation completed successfully', { id })
+      console.log('Photo generation completed and saved successfully', { id })
     } else {
       console.warn('Invalid or missing result, removing photo', { id, result })
       
@@ -331,55 +207,53 @@ export const snapPhoto = async (b64, signal) => {
         }
       })
       
-      // Alert user about invalid result
       alert(result ? 'Generated content was not a valid image. This might be due to content restrictions or API issues.' : 'No image was generated. Please check your API configuration.')
       
       // If result is undefined or invalid, remove the photo
-      deletePhoto(id)
+      await deletePhoto(id)
     }
   } catch (e) {
-    console.error('Error generating photo', { id, error: e.message, stack: e.stack })
+    let errorMessage = 'An unknown error occurred. See console for details.';
+    if (e instanceof Error) {
+        errorMessage = e.message;
+    } else if (e && typeof e.message === 'string' && e.message) {
+        errorMessage = e.message;
+    } else if (typeof e === 'string' && e) {
+        errorMessage = e;
+    }
     
+    console.error('Error generating photo', { id, error: e, stack: e?.stack });
+
     // Set error state for user feedback
     set(state => {
       state.lastError = {
-        message: e.message,
+        message: errorMessage,
         timestamp: Date.now(),
         type: 'generation_error'
-      }
-    })
-    
-    // Only show alert if all API keys have been exhausted
-    const errorMsg = e.message.toLowerCase()
-    if (errorMsg.includes('all') && errorMsg.includes('api keys failed')) {
-      // This is the final error after trying all keys
-      console.error('All API keys failed:', e.message)
-      alert('All API keys have been tried and failed. Please check your API keys or try again later.')
-    } else if (errorMsg.includes('quota') || errorMsg.includes('limit') || errorMsg.includes('rate')) {
-      console.error('API quota/rate limit reached:', e.message)
-      // Don't alert immediately - let it try other keys first
-    } else if (errorMsg.includes('api key') || errorMsg.includes('unauthorized')) {
-      console.error('API key issue:', e.message)
-      // Don't alert immediately - let it try other keys first
-    } else {
-      // For non-API errors, still show immediately
-      console.error('Generation failed:', e.message)
-      alert(`Photo generation failed: ${e.message}`)
-    }
-    
+      };
+    });
+
+    alert(
+      `Error generating photo: ${errorMessage}`
+    );
+
     // On error, remove the placeholder
-    deletePhoto(id)
+    await deletePhoto(id);
   }
 }
 
-export const deletePhoto = id => {
+export const deletePhoto = async id => {
   set(state => {
     state.photos = state.photos.filter(photo => photo.id !== id)
   })
 
   delete imageData.inputs[id]
   delete imageData.outputs[id]
-  savePhotos() // Save to localStorage after deletion
+  
+  await db.del(db.STORES.INPUTS, id).catch(e => console.error("Failed to delete input from DB", e));
+  await db.del(db.STORES.OUTPUTS, id).catch(e => console.error("Failed to delete output from DB", e));
+
+  savePhotos() // Save updated metadata
 }
 
 export const setMode = mode =>
@@ -387,58 +261,7 @@ export const setMode = mode =>
     state.activeMode = mode
   })
 
-export const setApiKeys = keys => {
-  localStorage.setItem('gemini-api-keys', JSON.stringify(keys))
-  set(state => {
-    state.apiKeys = keys
-    // Reset the API key index when new keys are set
-    state.currentApiKeyIndex = 0
-  })
-}
-
-export const setApiProvider = provider => {
-  localStorage.setItem('gemini-api-provider', provider)
-  set({apiProvider: provider})
-}
-
-export const setApiUrl = url => {
-  localStorage.setItem('gemini-api-url', url)
-  set({apiUrl: url})
-}
-
-export const setModel = model => {
-  localStorage.setItem('gemini-model', model)
-  set({model})
-}
-
-export const setAutoCaptureInterval = interval => {
-  const parsed = parseInt(interval, 10)
-  const newInterval = Math.max(1, Math.min(100, isNaN(parsed) ? 1 : parsed))
-  localStorage.setItem('auto-capture-interval', String(newInterval))
-  set({autoCaptureInterval: newInterval})
-}
-
-export const setBurstCount = count => {
-  const parsed = parseInt(count, 10)
-  const newCount = Math.max(1, Math.min(10, isNaN(parsed) ? 1 : parsed))
-  localStorage.setItem('burst-count', String(newCount))
-  set({burstCount: newCount})
-}
-
-export const setUseOpenRouter = useOpenRouter => {
-  localStorage.setItem('use-openrouter', String(useOpenRouter))
-  set({useOpenRouter})
-}
-
-export const setOpenRouterApiKey = key => {
-  localStorage.setItem('openrouter-api-key', key)
-  set({openRouterApiKey: key})
-}
-
-export const setOpenRouterModel = model => {
-  localStorage.setItem('openrouter-model', model)
-  set({openRouterModel: model})
-}
+export const setCameraMode = mode => set({ cameraMode: mode });
 
 const processImageToCanvas = async (base64Data, size) => {
   const img = new Image()
@@ -497,7 +320,7 @@ export const makeGif = async () => {
   })
 
   try {
-    const gif = new GIFEncoder()
+    const gif = GIFEncoder()
     
     let photosToUse
     if (selectedPhotos.length > 0) {
@@ -532,6 +355,7 @@ export const makeGif = async () => {
     })
   } catch (error) {
     console.error('Error creating GIF:', error)
+    alert(`Error creating GIF:\n${error.message}`);
     return null
   } finally {
     set(state => {
@@ -562,19 +386,24 @@ export const setReplayMode = mode => {
   })
 }
 
-export const clearAllPhotos = () => {
+export const clearAllPhotos = async () => {
   set(state => {
     state.photos = []
+    state.selectedPhotos = []
+    state.favorites = []
   })
   
   // Clear imageData
   Object.keys(imageData.inputs).forEach(key => delete imageData.inputs[key])
   Object.keys(imageData.outputs).forEach(key => delete imageData.outputs[key])
   
+  // Clear IndexedDB
+  await db.clear(db.STORES.INPUTS).catch(e => console.error("Failed to clear inputs DB", e));
+  await db.clear(db.STORES.OUTPUTS).catch(e => console.error("Failed to clear outputs DB", e));
+  
   // Clear localStorage
   localStorage.removeItem('fractal-photos')
-  localStorage.removeItem('fractal-inputs')
-  localStorage.removeItem('fractal-outputs')
+  localStorage.removeItem('fractal-favorites')
 }
 
 export const toggleFavorite = id => {
@@ -617,19 +446,20 @@ export const deselectAllPhotos = () => {
   })
 }
 
-export const deleteSelectedPhotos = () => {
+export const deleteSelectedPhotos = async () => {
   const {selectedPhotos} = get()
+  if (selectedPhotos.length === 0) return;
   
-  selectedPhotos.forEach(id => {
-    set(state => {
-      state.photos = state.photos.filter(photo => photo.id !== id)
-    })
+  for (const id of selectedPhotos) {
     delete imageData.inputs[id]
     delete imageData.outputs[id]
-  })
+    await db.del(db.STORES.INPUTS, id).catch(e => console.error("Failed to delete input from DB", e));
+    await db.del(db.STORES.OUTPUTS, id).catch(e => console.error("Failed to delete output from DB", e));
+  }
   
-  // Clear selection
   set(state => {
+    const selectedSet = new Set(selectedPhotos)
+    state.photos = state.photos.filter(photo => !selectedSet.has(photo.id))
     state.selectedPhotos = []
   })
   
@@ -641,38 +471,13 @@ export const debugPhotoStorage = () => {
   const {photos} = get()
   console.log('=== Photo Storage Debug ===')
   console.log('Photos in store:', photos.length)
-  console.log('Inputs in imageData:', Object.keys(imageData.inputs).length)
-  console.log('Outputs in imageData:', Object.keys(imageData.outputs).length)
+  console.log('Inputs in memory:', Object.keys(imageData.inputs).length)
+  console.log('Outputs in memory:', Object.keys(imageData.outputs).length)
   
-  // Check localStorage sizes
   const photosData = localStorage.getItem('fractal-photos')
-  const inputsData = localStorage.getItem('fractal-inputs')
-  const outputsData = localStorage.getItem('fractal-outputs')
+  console.log('localStorage fractal-photos (metadata):', photosData ? `${Math.round(photosData.length / 1024)}KB` : 'missing')
   
-  console.log('localStorage fractal-photos:', photosData ? `${Math.round(photosData.length / 1024)}KB` : 'missing')
-  console.log('localStorage fractal-inputs:', inputsData ? `${Math.round(inputsData.length / 1024)}KB` : 'missing')
-  console.log('localStorage fractal-outputs:', outputsData ? `${Math.round(outputsData.length / 1024)}KB` : 'missing')
-  
-  // Check for corrupted photo data
-  photos.forEach((photo, index) => {
-    const hasInput = imageData.inputs[photo.id]
-    const hasOutput = imageData.outputs[photo.id]
-    const inputSize = hasInput ? Math.round(hasInput.length / 1024) : 0
-    const outputSize = hasOutput ? Math.round(hasOutput.length / 1024) : 0
-    
-    if (!hasInput && !hasOutput) {
-      console.warn(`Photo ${index} (${photo.id}): Missing both input and output`)
-    } else if (!hasInput) {
-      console.warn(`Photo ${index} (${photo.id}): Missing input`)
-    } else if (!hasOutput && !photo.isBusy) {
-      console.warn(`Photo ${index} (${photo.id}): Missing output (not busy)`)
-    } else if (hasInput && inputSize < 10) {
-      console.warn(`Photo ${index} (${photo.id}): Input too small (${inputSize}KB)`)
-    } else if (hasOutput && outputSize < 10) {
-      console.warn(`Photo ${index} (${photo.id}): Output too small (${outputSize}KB)`)
-    }
-  })
-  
+  console.log('Check IndexedDB for actual image data.')
   console.log('=== End Debug ===')
 }
 
@@ -686,29 +491,23 @@ export const clearLastError = () => {
 export const cleanupCorruptedPhotos = () => {
   const {photos} = get()
   const cleanPhotos = photos.filter(photo => {
-    const hasInput = imageData.inputs[photo.id]
     const hasOutput = imageData.outputs[photo.id]
-    
-    // Keep if busy (still processing) or has valid data
     if (photo.isBusy) return true
     if (hasOutput && hasOutput.length > 1000) return true
-    
-    // Remove corrupted photo
     console.log(`Removing corrupted photo: ${photo.id}`)
     delete imageData.inputs[photo.id]
     delete imageData.outputs[photo.id]
+    db.del(db.STORES.INPUTS, photo.id);
+    db.del(db.STORES.OUTPUTS, photo.id);
     return false
   })
   
-  set(state => {
-    state.photos = cleanPhotos
-  })
-  
+  set({ photos: cleanPhotos })
   savePhotos()
   console.log(`Cleaned up ${photos.length - cleanPhotos.length} corrupted photos`)
 }
 
-init()
+init().catch(e => console.error("Initialization failed", e));
 
 // Make debug functions available globally for troubleshooting
 if (typeof window !== 'undefined') {

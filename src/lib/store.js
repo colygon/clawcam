@@ -18,19 +18,12 @@ export default createSelectorFunctions(
       gifInProgress: false,
       gifUrl: null,
       customPrompt: '',
-      apiKeys: [],
-      apiProvider: 'gemini',
-      apiUrl: '',
       model: 'gemini-2.5-flash-image-preview',
-      currentApiKeyIndex: 0,
       randomStyleIndex: 0,
-      autoCaptureInterval: 5,
-      burstCount: 1,
+      cameraMode: 'PHOTO', // 'PHOTO', 'NONSTOP', 'POSTCARD', 'TIMER'
       liveMode: false,
       replayMode: false,
-      useOpenRouter: false,
-      openRouterApiKey: '',
-      openRouterModel: 'google/gemini-2.5-flash-image-preview',
+      justSavedIds: [],
       lastError: null
     }))
   )

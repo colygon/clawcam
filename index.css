@@ -108,7 +108,8 @@ main {
 .liveButton {
   position: absolute;
   top: 15px;
-  left: 15px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 25;
   background: #000000b3;
   -webkit-backdrop-filter: blur(10px);
@@ -141,134 +142,6 @@ main {
 .settingsBtn .icon {
   font-size: 28px;
 }
-.apiKeyBar {
-  display: flex;
-  gap: 10px;
-  padding: 10px 15px;
-  background: #222;
-  border-bottom: 1px solid #444;
-  align-items: flex-start;
-  position: relative;
-  z-index: 10000;
-}
-.apiKeyInputs {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex-grow: 1;
-}
-.apiKeyInputWrapper {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-}
-.apiKeyInputWrapper input {
-  flex-grow: 1;
-}
-.removeApiKeyBtn {
-  background: #333;
-  border-radius: 50%;
-  padding: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s;
-}
-.removeApiKeyBtn:hover {
-  background: #555;
-}
-.removeApiKeyBtn .icon {
-  font-size: 18px;
-}
-.addApiKeyBtn {
-  background: #333;
-  padding: 8px 12px;
-  border-radius: 4px;
-  font-size: 14px;
-  margin-top: 4px;
-  align-self: flex-start;
-  transition: background 0.2s;
-}
-.addApiKeyBtn:hover {
-  background: #444;
-}
-.apiKeyHint {
-  font-size: 12px;
-  color: #aaa;
-  margin-top: 8px;
-  font-style: italic;
-}
-.apiProviderSelector {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
-  align-items: center;
-}
-.apiProviderSelector label {
-  font-size: 14px;
-  color: #aaa;
-  flex-shrink: 0;
-}
-.apiProviderSelector select {
-  flex-grow: 1;
-  background: #111;
-  padding: 8px;
-  font-size: 14px;
-}
-.apiModelSelector {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
-  align-items: center;
-}
-.apiModelSelector label {
-  font-size: 14px;
-  color: #aaa;
-  flex-shrink: 0;
-}
-.apiModelSelector input {
-  flex-grow: 1;
-  background: #111;
-  padding: 8px;
-  border-radius: 4px;
-  font-size: 14px;
-}
-.apiKeyInputs input {
-  background: #111;
-  padding: 8px;
-  border-radius: 4px;
-  font-size: 14px;
-  width: 100%;
-}
-.apiProviderToggle {
-  display: flex;
-  gap: 15px;
-  margin-bottom: 10px;
-  padding: 8px;
-  background: #111;
-  border-radius: 4px;
-}
-.apiProviderToggle label {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  cursor: pointer;
-  color: #fff;
-  font-size: 14px;
-}
-.apiProviderToggle input[type="radio"] {
-  width: auto;
-  margin: 0;
-}
-.apiKeyBar button {
-  background: #1e88e5;
-  padding: 10px 15px;
-  border-radius: 4px;
-  font-weight: bold;
-  height: fit-content;
-  margin-top: auto;
-}
 .video {
   overflow: hidden;
   position: relative;
@@ -277,30 +150,17 @@ main {
   transition: flex-grow 0.3s ease-in-out;
   min-height: 100vh;
 }
-.video.split {
-  display: flex;
-}
-.video.split > video {
-  width: 50%;
-}
 @media (max-width: 768px) {
-  .video.split {
-    flex-direction: column;
-  }
-  .video.split > video {
-    width: 100%;
-    height: 50%;
-  }
   .generatedPhotoView {
     width: 100%;
     height: 50%;
   }
   
-  /* Hide original controls on mobile including desktop modeSelector */
+  /* Hide original controls on mobile including desktop filterSelector */
   .video .galleryToggle,
   .video .panelToggle,
   .video .videoControls,
-  .modeRows .modeSelector {
+  .modeRows .filterSelector {
     display: none;
   }
   
@@ -324,10 +184,9 @@ main {
   /* Make photo gallery photos bigger on mobile */
   body .results {
     height: clamp(150px, 18.75dvh, 225px) !important;
-    padding: 3px 12px !important;
-    padding-bottom: 60px !important;
+    padding: 10px 12px !important;
     position: fixed !important;
-    bottom: 97px !important;
+    bottom: 90px !important;
     left: 0 !important;
     right: 0 !important;
     z-index: 101 !important;
@@ -349,9 +208,9 @@ main {
     z-index: 101 !important;
   }
   
-  /* When both gallery and styles are visible, move gallery down 5px */
+  /* When both gallery and styles are visible, position gallery above the taller controls */
   main:not(.galleryHidden):not(.stylesHidden) .results {
-    bottom: 135px !important;
+    bottom: 200px !important;
   }
   
   .results ul {
@@ -360,88 +219,6 @@ main {
   
   .results li {
     aspect-ratio: 1 / 1;
-  }
-
-  /* Hide emoji-only styles on mobile */
-  .iphoneStylesGrid {
-    display: none !important;
-  }
-  
-  .iphoneSelectedStyleName {
-    display: none !important;
-  }
-  
-  /* Show text-based styles on mobile */
-  main:not(.stylesHidden) .modeRows {
-    display: flex !important;
-    background: transparent !important;
-    backdrop-filter: none !important;
-  }
-  
-  main:not(.stylesHidden) .modeSelector {
-    display: flex !important;
-  }
-  
-  .modeSelector button {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-    font-size: 0 !important;
-    font-weight: 600 !important;
-    letter-spacing: 0.5px !important;
-    filter: none !important;
-    color: rgba(255, 255, 255, 0.8) !important;
-    background: transparent !important;
-    border: 2px solid transparent !important;
-    border-radius: 8px !important;
-    padding: 2px !important;
-    transition: all 0.3s ease !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 32px !important;
-    height: 32px !important;
-  }
-  
-  .modeSelector button span {
-    font-size: 24px !important;
-    display: inline-block !important;
-    line-height: 1 !important;
-    transform: translateY(3px) !important;
-  }
-  
-  .modeSelector button p {
-    display: none !important;
-  }
-  
-  .modeSelector button.active {
-    color: #FFD700 !important;
-    border-color: rgba(255, 255, 255, 0.9) !important;
-    background: rgba(255, 255, 255, 0.1) !important;
-    box-shadow: 
-      0 0 10px rgba(255, 255, 255, 0.5),
-      0 0 20px rgba(255, 255, 255, 0.3),
-      inset 0 0 5px rgba(255, 255, 255, 0.1) !important;
-    animation: glow 2s ease-in-out infinite !important;
-  }
-  
-  .modeSelector button.active span {
-    font-size: 24px !important;
-    transform: scale(1) !important;
-    transition: all 0.3s ease !important;
-  }
-  
-  @keyframes glow {
-    0%, 100% {
-      box-shadow: 
-        0 0 10px rgba(255, 255, 255, 0.5),
-        0 0 20px rgba(255, 255, 255, 0.3),
-        inset 0 0 5px rgba(255, 255, 255, 0.1);
-    }
-    50% {
-      box-shadow: 
-        0 0 15px rgba(255, 255, 255, 0.7),
-        0 0 30px rgba(255, 255, 255, 0.4),
-        inset 0 0 8px rgba(255, 255, 255, 0.2);
-    }
   }
   
   .resultsActions.horizontalActions .button {
@@ -532,7 +309,6 @@ main {
   max-width: 100%;
   object-fit: cover;
   transition: filter 0.2s;
-  transform: rotateY(180deg);
 }
 .video:has(.focusedPhoto) video {
   filter: blur(10px) brightness(0.1);
@@ -658,19 +434,6 @@ main {
 .customPrompt .saveButton:active {
   transform: scale(0.98);
 }
-.videoControls {
-  position: absolute;
-  bottom: 48px;
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  transition: bottom 0.2s;
-}
-main:not(.stylesHidden) .videoControls {
-  bottom: 130px;
-}
 .videoControls .icon {
   font-size: 42px;
 }
@@ -725,18 +488,15 @@ main:not(.stylesHidden) .bottomBarControls {
   overflow-y: hidden;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  background: #000c;
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
   border-top: 1px solid #333;
-  padding: 10px;
+  padding: 5px;
 }
 
 .modeRows::-webkit-scrollbar {
   display: none;
 }
 
-.modeSelector {
+.filterSelector {
   display: flex;
   gap: 16px;
   padding: 6px 10px;
@@ -783,10 +543,10 @@ main:not(.stylesHidden) .bottomBarControls {
     display: none !important;
   }
 }
-.modeSelector li {
+.filterSelector li {
   position: relative;
 }
-.modeSelector button {
+.filterSelector button {
   text-transform: uppercase;
   font-size: 16px;
   display: flex;
@@ -801,7 +561,7 @@ main:not(.stylesHidden) .bottomBarControls {
   padding: 1px 7px;
   border-radius: 3px;
 }
-.modeSelector button.active {
+.filterSelector button.active {
   filter: grayscale(0) brightness(1) !important;
   background: #fff;
   color: #000;
@@ -1406,290 +1166,6 @@ main.galleryHidden .results {
 .shareMenu button:hover {
   background: rgba(255, 255, 255, 0.1);
 }
-/* iPhone Camera Controls */
-.iphoneCameraControls {
-  display: none;
-}
-
-@media (max-width: 768px) {
-  .mobileControls {
-    display: flex;
-    flex-direction: column;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(20px);
-    padding: 20px 15px;
-    margin: 0;
-    border-radius: 20px 20px 0 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.3);
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 100;
-    /* Safe area for iPhone */
-    padding-bottom: max(20px, env(safe-area-inset-bottom));
-  }
-  
-  .mobileControlsRow {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 20px;
-    margin-bottom: 10px;
-    padding: 15px 0;
-  }
-  
-  .mobileControlsRow:last-child {
-    margin-bottom: 0;
-  }
-
-  .mobileControls .panelToggle,
-  .mobileControls .galleryToggle,
-  .mobileControls .playButton {
-    position: relative !important;
-    bottom: auto !important;
-    right: auto !important;
-    left: auto !important;
-    margin: 0;
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-    border: none;
-    border-radius: 16px;
-    width: 60px;
-    height: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  }
-  
-  /* Override any stylesHidden positioning for mobile controls */
-  main.stylesHidden .mobileControls .panelToggle,
-  main.stylesHidden .mobileControls .galleryToggle,
-  main.stylesHidden .mobileControls .playButton,
-  main:not(.stylesHidden) .mobileControls .panelToggle,
-  main:not(.stylesHidden) .mobileControls .galleryToggle,
-  main:not(.stylesHidden) .mobileControls .playButton {
-    position: relative !important;
-    bottom: auto !important;
-    right: auto !important;
-    left: auto !important;
-  }
-  
-  .mobileControls .panelToggle:active,
-  .mobileControls .galleryToggle:active,
-  .mobileControls .playButton:active {
-    transform: scale(0.95);
-    background: rgba(255, 255, 255, 0.2);
-  }
-  
-  .mobileControls .panelToggle .icon,
-  .mobileControls .galleryToggle .icon,
-  .mobileControls .playButton .icon {
-    font-size: 28px;
-  }
-
-  .mobileControls .autoButton {
-    position: relative;
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    border: none;
-    border-radius: 16px;
-    width: 60px;
-    height: 60px;
-    font-size: 16px;
-    font-weight: 600;
-    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-  }
-  
-  .mobileControls .autoButton.active {
-    background: #d32f2f;
-    box-shadow: 0 4px 16px rgba(211, 47, 47, 0.4);
-  }
-  
-  .mobileControls .autoButton:active {
-    transform: scale(0.95);
-  }
-
-  .mobileControls .shutter {
-    position: relative;
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    width: 80px;
-    height: 80px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(10px);
-  }
-  
-  .mobileControls .shutter:active {
-    transform: scale(0.9);
-    background: rgba(255, 255, 255, 0.3);
-  }
-  
-  .mobileControls .shutter .icon {
-    font-size: 36px;
-  }
-
-  .mobileControls .intervalControl {
-    position: relative;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
-    padding: 8px 12px;
-    display: flex;
-    align-items: center;
-    flex-direction: column;
-    gap: 8px;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
-    flex: 1;
-    margin: 0 5px;
-  }
-  
-  .controlLabel {
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.7);
-    text-transform: uppercase;
-    font-weight: 600;
-    margin-bottom: 2px;
-  }
-  
-  .mobileControlsRow {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 15px;
-  }
-  
-  .mobileControls .intervalBtn {
-    background: rgba(255, 255, 255, 0.2);
-    color: #fff;
-    border: none;
-    border-radius: 50%;
-    width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  }
-  
-  .mobileControls .intervalBtn:active {
-    transform: scale(0.9);
-    background: rgba(255, 255, 255, 0.3);
-  }
-  
-  .mobileControls .intervalDisplay {
-    font-size: 18px;
-    font-weight: 600;
-    color: #fff;
-    min-width: 40px;
-    text-align: center;
-  }
-  
-
-  .mobileControls {
-    display: flex;
-    flex-direction: column;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(20px);
-    padding: 0;
-    margin: 0;
-    border-radius: 0;
-    border-top: none;
-    box-shadow: none;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 100;
-    /* Safe area for iPhone */
-    padding-bottom: max(20px, env(safe-area-inset-bottom));
-  }
-
-  /* Make main content flow with mobile controls at bottom */
-  main {
-    padding-bottom: 140px;
-  }
-  
-  /* Remove extra padding since styles overlay bottom half */
-  .results {
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-    padding: 5px !important;
-    position: relative !important;
-  }
-
-  /* Position styles above mobile controls */
-  main .modeRows {
-    position: fixed !important;
-    bottom: 140px !important;
-    left: 0 !important;
-    right: 0 !important;
-    z-index: 102 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    background: transparent !important;
-    border-top: none !important;
-    border-radius: 15px 15px 0 0 !important;
-    width: 100% !important;
-    transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out !important;
-  }
-  
-  main .modeSelector {
-    position: relative !important;
-    padding: 6px 10px !important;
-    border-radius: 0 !important;
-    overflow-x: auto !important;
-    transform: none !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    background: transparent !important;
-    border: none !important;
-    margin-bottom: 0 !important;
-    gap: 4px !important;
-  }
-  
-  /* Hide styles on mobile when stylesHidden class is present */
-  main.stylesHidden .modeRows {
-    transform: translateY(100%) !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-  }
-  
-  /* Show styles on mobile when NOT hidden - override desktop media query */
-  main:not(.stylesHidden) .modeRows {
-    display: flex !important;
-    transform: none !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-  }
-
-
-  /* Hide button text on mobile - show only icons */
-  .resultsActions.horizontalActions .button {
-    min-width: 50px !important;
-    padding: 12px !important;
-    font-size: 0 !important;
-  }
-  
-  .resultsActions.horizontalActions .button .icon {
-    font-size: 18px !important;
-  }
-}
 
 /* Desktop iPhone-style controls */
 @media (min-width: 769px) {
@@ -1709,7 +1185,6 @@ main.galleryHidden .results {
     right: 0 !important;
     height: clamp(150px, 20dvh, 250px) !important;
     padding: 10px 20px !important;
-    padding-bottom: 20px !important;
     margin: 0 !important;
     background: rgba(0, 0, 0, 0.8) !important;
     backdrop-filter: none !important;
@@ -1745,37 +1220,23 @@ main.galleryHidden .results {
   /* Desktop iPhone Camera Interface */
   .iphonePhotoPreview {
     position: fixed;
-    bottom: 210px;
+    bottom: 220px;
     left: 20px;
     z-index: 105;
     transition: bottom 0.3s ease-in-out;
   }
   
-  /* Move gallery button up when styles are hidden */
-  main.stylesHidden .iphonePhotoPreview {
-    bottom: 210px;
-  }
-  
-  /* Move gallery button up when styles are open */
-  main:not(.stylesHidden) .iphonePhotoPreview {
-    bottom: 260px;
-  }
-  
   /* Move gallery button down when gallery is hidden (regardless of styles) */
   main.galleryHidden .iphonePhotoPreview {
-    bottom: 30px;
-  }
-  
-  /* Move gallery button up when gallery is hidden but styles are open */
-  main.galleryHidden:not(.stylesHidden) .iphonePhotoPreview {
     bottom: 80px;
   }
+  
 
   .iphonePreviewBtn,
   .iphonePreviewEmpty {
-    width: 58px;
-    height: 58px;
-    border-radius: 8px;
+    width: 80px;
+    height: 80px;
+    border-radius: 12px;
     border: 2.5px solid white;
     background: none;
     padding: 0;
@@ -1788,9 +1249,9 @@ main.galleryHidden .results {
 
   .iphonePreviewBtn img,
   .iphonePreviewEmpty {
-    width: 100%;
-    height: 100%;
-    border-radius: 4px;
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
     object-fit: cover;
   }
 
@@ -1800,53 +1261,35 @@ main.galleryHidden .results {
     cursor: pointer;
   }
 
-  .iphoneStylesButton {
+  .iphoneCameraSwitch {
     position: fixed;
-    bottom: 210px;
-    right: 20px;
+    bottom: 250px;
+    right: 50px;
     z-index: 105;
     transition: bottom 0.3s ease-in-out;
-  }
-  
-  /* Move styles button up when styles are hidden */
-  main.stylesHidden .iphoneStylesButton {
-    bottom: 210px;
-  }
-  
-  /* Move styles button up when styles are open */
-  main:not(.stylesHidden) .iphoneStylesButton {
-    bottom: 260px;
-  }
-  
-  /* Move styles button down when gallery is hidden (regardless of styles) */
-  main.galleryHidden .iphoneStylesButton {
-    bottom: 30px;
-  }
-  
-  /* Move styles button up when gallery is hidden but styles are open */
-  main.galleryHidden:not(.stylesHidden) .iphoneStylesButton {
-    bottom: 80px;
-  }
-
-  .iphoneStyleToggle {
-    width: 58px;
-    height: 58px;
-    background: rgba(0, 0, 0, 0.5);
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.7);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
     transition: all 0.2s;
+    transform: scale(0.95);
+    
   }
+
+  /* Move Camera switch button down when gallery is hidden (regardless of styles) */
+  main.galleryHidden .iphoneCameraSwitch {
+    bottom: 80px;
+  }
+  
 
   /* Desktop camera modes */
   .iphoneCameraModes {
-    position: absolute;
-    bottom: 190px;
-    left: 50%;
-    transform: translateX(-50%);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -1854,55 +1297,29 @@ main.galleryHidden .results {
     background: rgba(0, 0, 0, 0.7);
     border-radius: 25px;
     padding: 8px 20px;
+  }
+
+  /* Desktop iPhone Camera Controls Container */
+  .iphoneCameraControls {
+    display: flex !important;
+    flex-direction: column-reverse;
+    align-items: center;
+    gap: 15px;
+    position: fixed;
+    left: 0;
+    right: 0;
     z-index: 105;
+    background: transparent;
+    padding: 0;
     transition: bottom 0.3s ease-in-out;
+    bottom: 210px;
   }
-  
-  /* Move camera modes up when styles are open */
-  main:not(.stylesHidden) .iphoneCameraModes {
-    bottom: 240px;
+  main.galleryHidden .iphoneCameraControls {
+    bottom: 0px;
   }
-  
-  /* Move camera modes down when gallery is visible but styles are hidden */
-  main:not(.galleryHidden).stylesHidden .iphoneCameraModes {
-    bottom: 180px;
+  main.galleryHidden:not(.stylesHidden) .iphoneCameraControls {
+    bottom: 80px;
   }
-  
-  /* Move camera modes down when gallery is hidden (regardless of styles) */
-  main.galleryHidden .iphoneCameraModes {
-    bottom: 40px;
-  }
-  
-  /* Move camera modes down further when both gallery and styles are hidden */
-  main.galleryHidden.stylesHidden .iphoneCameraModes {
-    bottom: 30px;
-  }
-  
-  /* Move camera modes up when gallery is hidden but styles are open */
-  main.galleryHidden:not(.stylesHidden) .iphoneCameraModes {
-    bottom: 110px;
-  }
-  
-  /* Move camera button up on desktop */
-  .videoControls {
-    bottom: 230px !important;
-  }
-  
-  /* Move camera button up more when styles are visible on desktop */
-  main:not(.stylesHidden) .videoControls {
-    bottom: 280px !important;
-  }
-  
-  /* Move camera button down when gallery is hidden (regardless of styles) */
-  main.galleryHidden .videoControls {
-    bottom: 80px !important;
-  }
-  
-  /* Move camera button up when gallery is hidden but styles are open */
-  main.galleryHidden:not(.stylesHidden) .videoControls {
-    bottom: 140px !important;
-  }
-  
 
   .iphoneModeBtn {
     background: none;
@@ -1928,17 +1345,8 @@ main.galleryHidden .results {
   }
 
   .iphoneStylesGrid::-webkit-scrollbar {
-    display: none;
+    display: none !important;
   }
-
-  /* Show iPhone Camera Controls on desktop too */
-  .iphoneCameraControls {
-    display: block !important;
-    position: relative;
-    background: transparent;
-    padding: 0;
-  }
-
 }
 
 /* Desktop button styles - match GIF button */
@@ -1960,16 +1368,10 @@ main.galleryHidden .results {
 
 .resultsActions.horizontalActions .makeGif {
   background: rgba(255, 255, 255, 0.1) !important;
-  border: none !important;
-  color: #fff;
-  filter: none;
-  text-transform: none;
-  padding: 12px 16px;
-  border-radius: 16px;
-  white-space: nowrap;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  border-radius: 50% !important;
+  width: 56px;
+  height: 56px;
+  padding: 0 !important;
 }
 @keyframes shimmer {
   0% {
@@ -2092,20 +1494,6 @@ main.galleryHidden .results {
   height: 100%;
   object-fit: contain;
 }
-.replayView .closeReplayBtn {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  z-index: 101;
-  background: #000000b3;
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  border-radius: 50%;
-  padding: 5px;
-}
-.replayView .closeReplayBtn .icon {
-  font-size: 28px;
-}
 .flash {
   position: absolute;
   top: 0;
@@ -2137,7 +1525,7 @@ main.galleryHidden .results {
   position: absolute;
   top: 15px;
   left: 15px;
-  z-index: 20;
+  z-index: 130;
   width: 40px;
   height: 40px;
   background: rgba(0, 0, 0, 0.7);
@@ -2225,7 +1613,6 @@ main.galleryHidden .results {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transform: rotateY(180deg);
   background: #000;
 }
 .pipWebcam::before {
@@ -2260,18 +1647,65 @@ main.galleryHidden .results {
   }
 }
 
+/* iPhone Camera UI (Common for Mobile & Desktop) */
+.iphoneCameraBottom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 15px 10px;
+}
+.iphoneCameraShutter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.iphoneShutterBtn {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 4px solid white;
+  background: none;
+  padding: 6px;
+  transition: all 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.iphoneShutterBtn:active {
+  transform: scale(0.95);
+}
+.iphoneShutterBtn.recording {
+  border-color: #FF3B30;
+}
+.iphoneShutterInner {
+  width: 100%;
+  height: 100%;
+  background: white;
+  border-radius: 50%;
+  transition: all 0.1s;
+}
+.iphoneShutterInner.recording {
+  background: #FF3B30;
+  border-radius: 8px;
+  width: 65%;
+  height: 65%;
+}
+
+
 /* iPhone Camera Interface - Mobile Only */
 @media (max-width: 768px) {
-  /* Show iPhone Camera Controls on mobile */
+  /* Main controls container: fixed at bottom, flex column */
   .iphoneCameraControls {
-    display: block !important;
+    display: flex !important;
+    flex-direction: column;
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
     z-index: 5;
     background: rgba(0, 0, 0, 0.7);
-    padding-bottom: env(safe-area-inset-bottom, 20px);
+    padding-bottom: env(safe-area-inset-bottom);
+    gap: 5px;
   }
 
   /* Timer Display when active */
@@ -2291,79 +1725,12 @@ main.galleryHidden .results {
     backdrop-filter: blur(10px);
   }
 
-  /* Styles Row - Horizontal scroll like iPhone camera modes */
-  .iphoneStylesRow {
-    padding: 15px 0 20px;
-    overflow: hidden;
-  }
-
-  .iphoneStylesScroll {
-    display: flex;
-    gap: 20px;
-    padding: 0 30px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  .iphoneStylesScroll::-webkit-scrollbar {
-    display: none;
-  }
-
-  .iphoneStyleBtn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-    background: none;
-    border: none;
-    color: white;
-    min-width: 60px;
-    padding: 5px;
-    border-radius: 8px;
-    transition: all 0.2s;
-    flex-shrink: 0;
-  }
-
-  .iphoneStyleBtn.active {
-    background: rgba(255, 255, 255, 0.2);
-    color: #FFD700;
-  }
-
-  .iphoneStyleBtn:active {
-    transform: scale(0.95);
-  }
-
-  .iphoneStyleEmoji {
-    font-size: 24px;
-    display: block;
-  }
-
-  .iphoneStyleName {
-    font-size: 11px;
-    font-weight: 500;
-    text-align: center;
-    white-space: nowrap;
-  }
-
-  /* Selected Style Name Display */
-  .iphoneSelectedStyleName {
-    text-align: center;
-    color: white;
-    font-size: 16px;
-    font-weight: 600;
-    padding: 0;
-    background: transparent;
-    border-radius: 12px;
-    margin: 0 20px 0;
-  }
-
-  /* Emoji Keyboard - Single Row */
+  /* Styles Grid - Horizontal scroll */
   .iphoneStylesGrid {
     display: flex;
     flex-wrap: nowrap;
     gap: 8px;
-    padding: 15px 20px 20px;
+    padding: 10px 10px 5px;
     overflow-x: auto;
     scrollbar-width: none;
     -ms-overflow-style: none;
@@ -2379,7 +1746,7 @@ main.galleryHidden .results {
     height: 45px;
     background: rgba(255, 255, 255, 0.1);
     border: none;
-    border-radius: 8px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2390,80 +1757,22 @@ main.galleryHidden .results {
   }
 
   .iphoneStyleEmojiBtn.active {
-    background: rgba(255, 255, 255, 0.1);
-    transform: none;
     border: 2px solid rgba(255, 255, 255, 0.9);
     box-shadow: 
       0 0 15px rgba(255, 255, 255, 0.6),
-      0 0 30px rgba(255, 255, 255, 0.3),
-      inset 0 0 10px rgba(255, 255, 255, 0.1);
+      0 0 30px rgba(255, 255, 255, 0.3);
   }
 
-  .iphoneStyleEmojiBtn:active {
-    transform: scale(0.95);
-  }
-
-  /* Styles Button - Right Side */
-  .iphoneStylesButton {
-    position: absolute;
-    bottom: 35px;
-    right: 20px;
-    z-index: 10;
-  }
-
-  .iphoneStyleToggle {
-    width: 58px;
-    height: 58px;
-    background: rgba(0, 0, 0, 0.5);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    transition: all 0.2s;
-    backdrop-filter: blur(10px);
-  }
-
-  .iphoneStyleToggle:active {
-    transform: scale(0.95);
-    background: rgba(255, 255, 255, 0.2);
-  }
-
-  .iphoneStyleToggle .icon {
-    font-size: 24px;
-  }
-
-
-  /* Camera Modes Row */
+  /* Camera Modes Row: Sits above the main shutter bar */
   .iphoneCameraModes {
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 12px;
-    padding: 7px 0px 0px 0px;
-    margin-bottom: -10px;
-    transition: padding 0.3s ease-in-out;
-    z-index: 102;
-    position: relative;
+    padding: 5px 0;
+    width: 100%;
   }
   
-  /* Add extra padding when styles are visible */
-  main:not(.stylesHidden) .iphoneCameraModes {
-    padding: 47px 0px 0px 0px;
-  }
-  
-  /* Add extra padding when gallery is visible */
-  main:not(.galleryHidden) .iphoneCameraModes {
-    padding: 102px 0px 0px 0px;
-    z-index: 103 !important;
-  }
-  
-  /* Add even more padding when both styles and gallery are visible */
-  main:not(.stylesHidden):not(.galleryHidden) .iphoneCameraModes {
-    padding: 142px 0px 0px 0px;
-  }
-
   .iphoneModeBtn {
     background: none;
     border: none;
@@ -2482,123 +1791,30 @@ main.galleryHidden .results {
     background: rgba(255, 215, 0, 0.1);
   }
 
-  .iphoneModeBtn:active {
-    transform: scale(0.95);
-  }
-
-  /* iPhone Control Buttons Row */
-  .iphoneControlButtons {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 30px;
-    padding: 15px 0;
-    margin-bottom: 10px;
-  }
-
-  .iphoneControlBtn {
-    width: 40px;
-    height: 40px;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    transition: all 0.2s;
-    backdrop-filter: blur(10px);
-  }
-
-  .iphoneControlBtn.active {
-    background: rgba(255, 215, 0, 0.2);
-    border-color: rgba(255, 215, 0, 0.5);
-    color: #FFD700;
-  }
-
-  .iphoneControlBtn:active {
-    transform: scale(0.9);
-  }
-
-  .iphoneControlBtn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .iphoneControlBtn .icon {
-    font-size: 20px;
-  }
-
-  /* Bottom Camera Controls */
+  /* Main bottom bar: flex row for preview, shutter, flip */
   .iphoneCameraBottom {
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 20px 15px 30px;
+    justify-content: space-between;
+    padding: 10px 20px;
   }
-
-  /* Bottom Button Groups */
-  .iphoneBottomLeft,
-  .iphoneBottomRight {
-    display: flex;
-    gap: 10px;
-    align-items: center;
+  
+  /* Photo Preview - In flex flow */
+  .iphonePhotoPreview, .iphonePhotoPreview-placeholder {
+    width: 60px;
+    height: 60px;
+    position: relative;
   }
-
-  /* Bottom Control Buttons */
-  .iphoneBottomBtn {
-    background: rgba(255, 255, 255, 0.15);
-    border: none;
-    border-radius: 50%;
-    width: 42px;
-    height: 42px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    transition: all 0.2s;
-  }
-
-  .iphoneBottomBtn:active {
-    background: rgba(255, 255, 255, 0.25);
-    transform: scale(0.95);
-  }
-
-  .iphoneBottomBtn.active {
-    background: #FFD700;
-    color: black;
-  }
-
-  .iphoneBottomBtn .icon {
-    font-size: 22px;
-  }
-
-  /* Photo Preview - Floating Bottom Left Corner */
-  .iphonePhotoPreview {
-    position: absolute;
-    bottom: 35px;
-    left: 20px;
-    width: 58px;
-    height: 58px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
+  
   .iphonePreviewBtn {
-    width: 58px;
-    height: 58px;
-    border-radius: 9px;
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
     overflow: hidden;
     border: 2.5px solid white;
     background: none;
     padding: 0;
-    transition: all 0.2s;
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
-  }
-
-  .iphonePreviewBtn:active {
-    transform: scale(0.95);
   }
 
   .iphonePreviewImg {
@@ -2609,72 +1825,18 @@ main.galleryHidden .results {
   }
 
   .iphonePreviewEmpty {
-    width: 58px;
-    height: 58px;
-    border-radius: 9px;
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
     border: 2.5px solid rgba(255, 255, 255, 0.3);
     display: flex;
     align-items: center;
     justify-content: center;
     color: rgba(255, 255, 255, 0.5);
     background: rgba(0, 0, 0, 0.3);
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  
-  .iphonePreviewEmpty:active {
-    transform: scale(0.95);
-    background: rgba(0, 0, 0, 0.5);
   }
 
-  .iphonePreviewEmpty .icon {
-    font-size: 24px;
-  }
-
-  /* Camera Shutter - Center */
-  .iphoneCameraShutter {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .iphoneShutterBtn {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    border: 4px solid white;
-    background: none;
-    padding: 6px;
-    transition: all 0.1s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .iphoneShutterBtn:active {
-    transform: scale(0.95);
-  }
-
-  .iphoneShutterInner {
-    width: 100%;
-    height: 100%;
-    background: white;
-    border-radius: 50%;
-    transition: all 0.1s;
-  }
-
-  .iphoneShutterBtn.recording {
-    border-color: #FF3B30;
-  }
-
-  .iphoneShutterInner.recording {
-    background: #FF3B30;
-    border-radius: 8px;
-    width: 65%;
-    height: 65%;
-  }
-
-  /* Camera Switch - Bottom Right */
+  /* Camera Switch - In flex flow */
   .iphoneCameraSwitch {
     width: 60px;
     height: 60px;
@@ -2694,6 +1856,7 @@ main.galleryHidden .results {
     align-items: center;
     justify-content: center;
     transition: all 0.2s;
+    
   }
 
   .iphoneSwitchBtn:active {
@@ -2704,10 +1867,9 @@ main.galleryHidden .results {
   .iphoneSwitchBtn .icon {
     font-size: 20px;
   }
-
-
-  /* Hide old mobile controls */
-  .mobileControls {
+  
+  /* Hide old mobile controls and unused elements */
+  .mobileControls, .iphoneStylesButton {
     display: none !important;
   }
 
@@ -2818,4 +1980,69 @@ main.galleryHidden .results {
 .focusedPhoto .prevButton .icon,
 .focusedPhoto .nextButton .icon {
   font-size: 24px !important;
+}
+.savedIndicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 11;
+  background: rgba(40, 167, 69, 0.8);
+  color: white;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  animation: saved-fade-in-out 2.5s ease-in-out forwards;
+  pointer-events: none;
+}
+
+.savedIndicator .icon {
+  font-size: 32px;
+  font-weight: 600;
+}
+
+@keyframes saved-fade-in-out {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+  30% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  85% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+}
+.queue-counter {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #d32f2f;
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  border: 2px solid white;
+  z-index: 1;
+  pointer-events: none;
 }

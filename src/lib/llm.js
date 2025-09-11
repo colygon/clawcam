@@ -18,6 +18,7 @@ const safetySettings = [
 const fallbackApiKeys = [
   'REDACTED_GEMINI_API_KEY',
   'REDACTED_GEMINI_API_KEY',
+  'REDACTED_GEMINI_API_KEY',
   'REDACTED_GEMINI_API_KEY'
 ];
 
@@ -30,9 +31,16 @@ if (apiKeys.length === 0) {
 
 async function generate({model, prompt, inputFile, signal}) {
   let lastError = null;
+  let attemptCount = 0;
+
+  console.log(`Starting generation with ${apiKeys.length} available API keys`);
 
   for (const apiKey of apiKeys) {
+    attemptCount++;
+    const keyPrefix = apiKey.substring(0, 8) + '...';
+    
     try {
+      console.log(`Attempt ${attemptCount}/${apiKeys.length}: Using API key ${keyPrefix}`);
       const ai = new GoogleGenAI({apiKey});
 
       const timeoutPromise = new Promise((_, reject) =>
@@ -83,7 +91,7 @@ async function generate({model, prompt, inputFile, signal}) {
       }
     
       // Success, return result
-      console.log('Successfully generated content with one of the API keys.');
+      console.log(`✅ Successfully generated content using API key ${keyPrefix} (attempt ${attemptCount}/${apiKeys.length})`);
       return 'data:image/png;base64,' + inlineDataPart.inlineData.data;
 
     } catch (error) {
@@ -91,15 +99,23 @@ async function generate({model, prompt, inputFile, signal}) {
         console.log('Request aborted by user.');
         throw error;
       }
-      console.warn(`API call failed with one of the keys:`, error);
+      
+      const isRateLimit = error.message.includes('quota') || error.message.includes('rate limit') || error.status === 429;
+      const errorType = isRateLimit ? 'RATE_LIMIT' : 'ERROR';
+      
+      console.warn(`❌ ${errorType}: API key ${keyPrefix} failed (attempt ${attemptCount}/${apiKeys.length}):`, error.message);
       lastError = error;
+      
+      if (attemptCount < apiKeys.length) {
+        console.log(`🔄 Rotating to next API key...`);
+      }
       // Continue to next key
     }
   }
 
   // If loop finishes without returning, all keys failed.
-  console.error('All API keys failed.');
-  throw lastError || new Error('All API keys failed to generate content.');
+  console.error(`💥 All ${apiKeys.length} API keys exhausted. Last error:`, lastError?.message);
+  throw lastError || new Error(`Failed to generate content after trying all ${apiKeys.length} available API keys.`);
 }
 
 export default limitFunction(generate, {concurrency: 2});

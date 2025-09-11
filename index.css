@@ -167,7 +167,7 @@ main {
 
   /* Make photo gallery photos bigger on mobile */
   body .results {
-    height: clamp(150px, 18.75dvh, 225px) !important;
+    height: clamp(120px, 18.75dvh, 225px) !important;
     padding: 0px 12px !important;
     position: fixed !important;
     bottom: 90px !important;
@@ -251,7 +251,7 @@ main {
   width: 100%;
   height: 100%;
   background: #000;
-  z-index: 5;
+  z-index: 140;
 }
 .liveGifView img {
   width: 100%;
@@ -1019,6 +1019,53 @@ main.galleryHidden .results {
   font-size: 24px;
   z-index: 1;
 }
+
+.queue-number {
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  z-index: 2;
+  position: relative;
+}
+
+.cancel-generation-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(255, 59, 48, 0.9);
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 3;
+  transition: all 0.2s ease;
+}
+
+.cancel-generation-btn:hover {
+  background: rgba(255, 59, 48, 1);
+  transform: scale(1.1);
+}
+
+.cancel-generation-btn .icon {
+  font-size: 14px !important;
+  color: white !important;
+}
+
+/* Hide photo selectors in main gallery (only show them in focused photo mode) */
+main:not(:has(.focusedPhoto)) .photoSelector {
+  display: none !important;
+}
 .results li.isBusy {
   position: relative;
 }
@@ -1122,6 +1169,11 @@ main.galleryHidden .results {
 
 .focusedPhotoActions .button .icon {
   font-size: 28px;
+}
+
+/* Make GIF button icon larger */
+.focusedPhotoActions-center .button:nth-child(3) .icon {
+  font-size: 36px;
 }
 
 .focusedPhotoActions .button:not([disabled]):hover {
@@ -1319,6 +1371,11 @@ main.galleryHidden .results {
   main.galleryHidden:not(.stylesHidden) .iphoneCameraControls {
     bottom: 80px;
   }
+  
+  /* Move camera controls to bottom in live mode */
+  main.liveMode .iphoneCameraControls {
+    bottom: 0px !important;
+  }
 
   .iphoneModeBtn {
     background: none;
@@ -1435,7 +1492,7 @@ main.galleryHidden .results {
   position: fixed;
   inset: 0;
   background: #000;
-  z-index: 110;
+  z-index: 130;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1475,7 +1532,8 @@ main.galleryHidden .results {
 .topLeftPlayBtn {
   position: absolute;
   top: 15px;
-  left: 15px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 130;
   width: 56px;
   height: 56px;
@@ -1493,12 +1551,12 @@ main.galleryHidden .results {
 
 .topLeftPlayBtn:hover {
   background: rgba(255, 255, 255, 0.1);
-  transform: scale(1);
+  transform: translateX(-50%) scale(1);
 }
 
 .topLeftPlayBtn:active {
   background: rgba(255, 255, 255, 0.2);
-  transform: scale(0.95);
+  transform: translateX(-50%) scale(0.95);
 }
 
 .topLeftPlayBtn .icon {
@@ -1611,7 +1669,7 @@ main.galleryHidden .results {
   /* And move the gallery above the action buttons */
   .focusedPhoto .results {
     bottom: 80px !important; /* Position it above the action bar */
-    height: clamp(90px, 25dvh, 110px) !important;
+    height: clamp(63px, 17.5dvh, 77px) !important;
     padding-top: 10px !important;
   }
 }
@@ -1998,8 +2056,8 @@ main.galleryHidden .results {
 
 .focusedCloseBtn {
   position: absolute;
-  top: 20px;
-  right: 20px;
+  top: 15px;
+  left: 15px;
   z-index: 130;
   width: 56px;
   height: 56px;

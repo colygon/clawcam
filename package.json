@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@clerk/clerk-react": "^5.46.2",
     "@google/genai": "latest",
     "auto-zustand-selectors-hook": "latest",
     "clsx": "latest",

@@ -331,6 +331,7 @@ export default {
     postcardText: 'A dispatch from the past'
   },
 
+
   anime: {
     name: 'Anime',
     emoji: '🍣',
@@ -390,6 +391,12 @@ export default {
     postcardText: 'Dressed to Impress'
   },
 
+  professional: {
+    name: 'Professional',
+    emoji: '💼',
+    prompt: 'Transform the scene into a clean, modern professional setting. Replace the background with a minimalist, upscale office environment - think sleek glass walls, contemporary furniture, and soft natural lighting from large windows. The space should look pristine, organized, and sophisticated. Change the person\'s clothing to stylish business casual attire. For males: well-fitted chinos or dress pants with a crisp button-down shirt (no tie), optional blazer, and leather loafers or oxford shoes. For females: tailored pants or skirt with a professional blouse, cardigan or blazer, and low heels or professional flats. The clothing should look fresh, modern, and effortlessly professional - not too formal but polished and put-together. Preserve their exact facial features and natural expression while ensuring the lighting creates a bright, professional atmosphere.'
+  },
+
   avatar: {
     name: 'Avatar',
     emoji: '🧿',
@@ -398,12 +405,18 @@ export default {
     postcardText: 'Greetings from Pandora!'
   },
 
+  tokyo: {
+    name: 'Tokyo',
+    emoji: '🏯',
+    prompt: 'Place the person or people in a vibrant Tokyo street scene with colorful neon signs. It is crucial to preserve their exact facial features, expressions, and character. Dress them in modern Japanese street fashion. Create realistic shadows and colorful reflections from the neon lights on their clothing and skin. Ensure the dynamic lighting and styling are applied consistently to everyone in the photo with character consistency.',
+    category: 'location'
+  },
+
   kyoto: {
     name: 'Kyoto',
     emoji: '🏮',
-    prompt: 'Place the person or people in historic Kyoto, surrounded by temples and cherry blossoms. It is crucial to preserve their exact facial features, expressions, and character. Dress them in authentic Japanese period attire (e.g., samurai armor or elegant kimonos). Create realistic, soft lighting as if during a gentle spring evening, with warm lantern glows and soft shadows from cherry blossom trees. If there are multiple people, dress them in consistent and appropriate period attire for character consistency.',
-    category: 'location',
-    postcardText: 'Greetings from Kyoto'
+    prompt: 'Place the person or people in modern-day Kyoto as tourists visiting the historic sites. Preserve their exact facial features, expressions, and keep their current clothing exactly as it is - do not change their outfits at all. Place them in authentic Kyoto locations like the famous bamboo groves of Arashiyama, the iconic orange torii gates of Fushimi Inari shrine, traditional temple courtyards with wooden architecture, or scenic paths lined with cherry blossom trees. The lighting should be natural daylight as if they are sightseeing, with realistic shadows and the warm, golden light filtering through bamboo or reflecting off traditional Japanese architecture. Include background details like stone lanterns, temple roofs, other tourists in the distance, and the serene atmosphere of historic Kyoto, making it look like a genuine travel photo.',
+    category: 'location'
   },
 
   suzhou: {
@@ -412,6 +425,14 @@ export default {
     prompt: 'Place the person or people in one of the classical gardens of Suzhou, famous for its elegant pagodas, rock formations, and serene ponds. It is crucial to preserve their exact facial features, expressions, and character. Dress them in beautiful, traditional Chinese attire (like Hanfu), as if they are there for a photoshoot. The lighting should be soft and picturesque, highlighting the beauty of the garden. Apply all changes consistently to everyone, maintaining character consistency.',
     category: 'location',
     postcardText: 'Timeless beauty from Suzhou'
+  },
+
+  shanghai: {
+    name: 'Shanghai',
+    emoji: '🏙️',
+    prompt: 'Place the person or people in a bustling night market along the Bund in Shanghai, with the futuristic skyline of Pudong glowing in the background. It is crucial to preserve their exact facial features, expressions, and character. Dress them in chic, modern, cosmopolitan fashion. The scene should be illuminated by the vibrant city lights from the skyline and colorful lanterns from the market stalls, creating a lively atmosphere with colorful reflections. Apply all changes consistently to everyone, maintaining character consistency.',
+    category: 'location',
+    postcardText: 'Greetings from Shanghai!'
   },
 
   shanghai: {

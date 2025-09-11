@@ -231,6 +231,17 @@ export const snapPhoto = async (b64, signal) => {
   }
 }
 
+export const cancelPhotoGeneration = id => {
+  set(state => {
+    // Remove the photo from the photos array
+    state.photos = state.photos.filter(photo => photo.id !== id)
+  })
+  
+  // Clean up any image data
+  delete imageData.inputs[id]
+  delete imageData.outputs[id]
+}
+
 export const deletePhoto = async id => {
   set(state => {
     state.photos = state.photos.filter(photo => photo.id !== id)
@@ -252,7 +263,7 @@ export const setMode = mode =>
 
 export const setCameraMode = mode => set({ cameraMode: mode });
 
-const processImageToCanvas = async (base64Data, size) => {
+const processImageToCanvas = async (base64Data, maxSize = 640) => {
   const img = new Image()
   await new Promise((resolve, reject) => {
     img.onload = resolve
@@ -260,35 +271,33 @@ const processImageToCanvas = async (base64Data, size) => {
     img.src = base64Data
   })
 
-  const canvas = document.createElement('canvas')
-  const ctx = canvas.getContext('2d')
-  canvas.width = size
-  canvas.height = size
-
+  // Calculate dimensions that preserve aspect ratio
   const imgAspect = img.width / img.height
-  const canvasAspect = 1
-
-  let drawWidth
-  let drawHeight
-  let drawX
-  let drawY
-
-  if (imgAspect > canvasAspect) {
-    drawHeight = size
-    drawWidth = drawHeight * imgAspect
-    drawX = (size - drawWidth) / 2
-    drawY = 0
+  let canvasWidth, canvasHeight
+  
+  if (imgAspect > 1) {
+    // Landscape
+    canvasWidth = Math.min(maxSize, img.width)
+    canvasHeight = canvasWidth / imgAspect
   } else {
-    drawWidth = size
-    drawHeight = drawWidth / imgAspect
-    drawX = 0
-    drawY = (size - drawHeight) / 2
+    // Portrait or square
+    canvasHeight = Math.min(maxSize, img.height)
+    canvasWidth = canvasHeight * imgAspect
   }
 
-  ctx.clearRect(0, 0, size, size)
-  ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight)
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+  canvas.width = canvasWidth
+  canvas.height = canvasHeight
 
-  return ctx.getImageData(0, 0, size, size)
+  ctx.clearRect(0, 0, canvasWidth, canvasHeight)
+  ctx.drawImage(img, 0, 0, canvasWidth, canvasHeight)
+
+  return {
+    imageData: ctx.getImageData(0, 0, canvasWidth, canvasHeight),
+    width: canvasWidth,
+    height: canvasHeight
+  }
 }
 
 export const makeGif = async () => {
@@ -315,15 +324,24 @@ export const makeGif = async () => {
         .reverse() // Oldest to newest
     }
 
-    for (const photo of photosToUse) {
-      const outputImageData = await processImageToCanvas(
-        imageData.outputs[photo.id],
-        gifSize
+    let gifWidth, gifHeight
+    
+    for (let i = 0; i < photosToUse.length; i++) {
+      const photo = photosToUse[i]
+      const processedImage = await processImageToCanvas(
+        imageData.outputs[photo.id]
       )
-      const palette = quantize(outputImageData.data, 256)
-      const indexed = applyPalette(outputImageData.data, palette)
+      
+      // Use dimensions from first image for all frames
+      if (i === 0) {
+        gifWidth = processedImage.width
+        gifHeight = processedImage.height
+      }
+      
+      const palette = quantize(processedImage.imageData.data, 256)
+      const indexed = applyPalette(processedImage.imageData.data, palette)
 
-      gif.writeFrame(indexed, gifSize, gifSize, {
+      gif.writeFrame(indexed, gifWidth, gifHeight, {
         palette,
         delay: 333
       })

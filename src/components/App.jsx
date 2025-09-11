@@ -5,9 +5,17 @@
 import React, {useRef, useState, useCallback, useEffect} from 'react'
 import c from 'clsx'
 import {
+  SignedIn,
+  SignedOut,
+  SignInButton,
+  SignUpButton,
+  UserButton,
+} from '@clerk/clerk-react'
+import {
   snapPhoto,
   setMode,
   deletePhoto,
+  cancelPhotoGeneration,
   makeGif,
   hideGif,
   setCustomPrompt,
@@ -67,28 +75,7 @@ export default function App() {
     return () => window.removeEventListener('resize', checkDesktop)
   }, [])
 
-  // Get valid photos for navigation
-  const validPhotos = photos.filter(({id, isBusy}) => {
-    if (isBusy) return false
-    const output = imageData.outputs[id]
-    const hasValidOutput = output && typeof output === 'string' && output.length > 100 && output.startsWith('data:image/')
-    return hasValidOutput
-  })
 
-  // Navigation functions for focused image
-  const goToPreviousPhoto = useCallback(() => {
-    if (!focusedId || validPhotos.length === 0) return
-    const currentIndex = validPhotos.findIndex(photo => photo.id === focusedId)
-    const prevIndex = currentIndex > 0 ? currentIndex - 1 : validPhotos.length - 1
-    setFocusedId(validPhotos[prevIndex].id)
-  }, [focusedId, validPhotos])
-
-  const goToNextPhoto = useCallback(() => {
-    if (!focusedId || validPhotos.length === 0) return
-    const currentIndex = validPhotos.findIndex(photo => photo.id === focusedId)
-    const nextIndex = currentIndex < validPhotos.length - 1 ? currentIndex + 1 : 0
-    setFocusedId(validPhotos[nextIndex].id)
-  }, [focusedId, validPhotos])
   const streamRef = useRef(null)
   const genControllersRef = useRef([])
   const autoCaptureTimerRef = useRef(null)
@@ -256,19 +243,11 @@ export default function App() {
     init()
   }, [])
 
-  // Add keyboard navigation for focused photo mode
+  // Add keyboard shortcuts for focused photo mode
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (focusedId && !gifUrl) {
         switch (event.key) {
-          case 'ArrowLeft':
-            event.preventDefault()
-            goToPreviousPhoto()
-            break
-          case 'ArrowRight':
-            event.preventDefault()
-            goToNextPhoto()
-            break
           case 'Escape':
             event.preventDefault()
             setFocusedId(null)
@@ -284,6 +263,22 @@ export default function App() {
             deletePhoto(focusedId)
             setFocusedId(null)
             break
+          case 'ArrowLeft':
+            event.preventDefault()
+            const finishedPhotosLeft = photos.filter(p => !p.isBusy)
+            const currentIndexLeft = finishedPhotosLeft.findIndex(p => p.id === focusedId)
+            if (currentIndexLeft > 0) {
+              setFocusedId(finishedPhotosLeft[currentIndexLeft - 1].id)
+            }
+            break
+          case 'ArrowRight':
+            event.preventDefault()
+            const finishedPhotosRight = photos.filter(p => !p.isBusy)
+            const currentIndexRight = finishedPhotosRight.findIndex(p => p.id === focusedId)
+            if (currentIndexRight < finishedPhotosRight.length - 1) {
+              setFocusedId(finishedPhotosRight[currentIndexRight + 1].id)
+            }
+            break
         }
       }
     }
@@ -292,54 +287,16 @@ export default function App() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [focusedId, gifUrl, goToPreviousPhoto, goToNextPhoto])
+  }, [focusedId, gifUrl])
 
   useEffect(() => {
-    // Manage gallery visibility based on device and photos
-    if (isDesktop && photos.length > 0) {
-      setGalleryVisible(true);
-    } else if (!isDesktop) {
+    // Manage gallery visibility based on device
+    if (!isDesktop) {
       // Always hide main gallery on mobile
       setGalleryVisible(false);
     }
-  }, [isDesktop, photos.length]);
+  }, [isDesktop]);
 
-  // Focused image gesture handling for mobile
-  useEffect(() => {
-    let touchStartX = 0;
-    let touchEndX = 0;
-
-    const handleTouchStart = (e) => {
-      touchStartX = e.changedTouches[0].screenX;
-    };
-
-    const handleTouchEnd = (e) => {
-      touchEndX = e.changedTouches[0].screenX;
-      handleSwipe();
-    };
-
-    const handleSwipe = () => {
-      if (touchEndX < touchStartX - 50) { // Swiped left
-        goToNextPhoto();
-      }
-      if (touchEndX > touchStartX + 50) { // Swiped right
-        goToPreviousPhoto();
-      }
-    };
-
-    const focusedElement = document.querySelector('.focusedPhoto');
-    if (focusedElement) {
-      focusedElement.addEventListener('touchstart', handleTouchStart);
-      focusedElement.addEventListener('touchend', handleTouchEnd);
-    }
-
-    return () => {
-      if (focusedElement) {
-        focusedElement.removeEventListener('touchstart', handleTouchStart);
-        focusedElement.removeEventListener('touchend', handleTouchEnd);
-      }
-    };
-  }, [focusedId, goToNextPhoto, goToPreviousPhoto]);
   
   const handlePhotoButtonClick = () => {
     // If we're already auto-capturing, this button acts as a stop button
@@ -388,9 +345,46 @@ export default function App() {
     <main
       className={c({
         galleryHidden: !galleryVisible,
-        stylesHidden: !stylesVisible
+        stylesHidden: !stylesVisible,
+        liveMode: liveMode
       })}
     >
+      <header style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 1000 }}>
+        <SignedOut>
+          <SignInButton mode="modal">
+            <button style={{
+              background: 'rgba(44, 44, 46, 0.8)',
+              backdropFilter: 'blur(10px)',
+              WebkitBackdropFilter: 'blur(10px)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '50%',
+              width: '56px',
+              height: '56px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              Sign In
+            </button>
+          </SignInButton>
+        </SignedOut>
+        <SignedIn>
+          <UserButton 
+            appearance={{
+              elements: {
+                avatarBox: {
+                  width: '56px',
+                  height: '56px'
+                }
+              }
+            }}
+          />
+        </SignedIn>
+      </header>
       {liveMode && (
         <>
           <button className={c('liveButton', {active: autoCapture})}>
@@ -408,7 +402,7 @@ export default function App() {
         </>
       )}
 
-      {!hideControls && !gifUrl && photos.length > 0 && !replayMode && (
+      {!hideControls && !gifUrl && photos.length > 0 && !replayMode && focusedId && (
         <div className="topLeftPlayBtn" onClick={() => setReplayMode(true)}>
           <span className="icon">play_arrow</span>
         </div>
@@ -451,10 +445,22 @@ export default function App() {
           <FocusedPhoto
             photo={focusedPhoto}
             onClose={() => setFocusedId(null)}
-            onPrev={goToPreviousPhoto}
-            onNext={goToNextPhoto}
             isFavorite={favorites.includes(focusedId)}
             onMakeGif={makeGif}
+            onPrevious={() => {
+              const finishedPhotos = photos.filter(p => !p.isBusy)
+              const currentIndex = finishedPhotos.findIndex(p => p.id === focusedId)
+              if (currentIndex > 0) {
+                setFocusedId(finishedPhotos[currentIndex - 1].id)
+              }
+            }}
+            onNext={() => {
+              const finishedPhotos = photos.filter(p => !p.isBusy)
+              const currentIndex = finishedPhotos.findIndex(p => p.id === focusedId)
+              if (currentIndex < finishedPhotos.length - 1) {
+                setFocusedId(finishedPhotos[currentIndex + 1].id)
+              }
+            }}
           >
             <Results
               photos={photos}
@@ -474,12 +480,62 @@ export default function App() {
               className="circleBtn"
               style={{
                 top: '20px',
-                right: '20px',
+                left: '20px',
                 zIndex: 10
               }}
               onClick={hideGif}
             >
               <span className="icon">close</span>
+            </button>
+            <button
+              className="circleBtn"
+              style={{
+                bottom: '40px',
+                left: '50%',
+                transform: 'translateX(-100px)',
+                zIndex: 10
+              }}
+              onClick={async () => {
+                try {
+                  const response = await fetch(gifUrl)
+                  const blob = await response.blob()
+                  const file = new File([blob], 'banana-cam.gif', {type: 'image/gif'})
+                  
+                  if (navigator.canShare && navigator.canShare({files: [file]})) {
+                    await navigator.share({
+                      files: [file],
+                      title: 'Banana Cam GIF',
+                      text: 'Check out this GIF I made with Banana Cam! Visit www.banana.cam to make your own.'
+                    })
+                  } else {
+                    alert("Sharing not supported on this browser.")
+                  }
+                } catch (error) {
+                  console.error('Error sharing GIF:', error)
+                  alert("Could not share GIF.")
+                }
+              }}
+            >
+              <span className="icon">ios_share</span>
+            </button>
+            <button
+              className="circleBtn"
+              style={{
+                bottom: '40px',
+                left: '50%',
+                transform: 'translateX(-28px)',
+                zIndex: 10
+              }}
+              onClick={() => {
+                const link = document.createElement('a')
+                link.href = gifUrl
+                link.download = 'banana-cam.gif'
+                document.body.appendChild(link)
+                link.click()
+                document.body.removeChild(link)
+              }}
+            >
+              <span className="icon">download</span>
             </button>
           </div>
         )}
@@ -571,6 +627,16 @@ function Results({photos, favorites, selectedPhotos, focusedId, setFocusedId, bu
                   />
                   <div className="shimmer-overlay">
                      <span className="queue-number">{busyPhotos.findIndex(p => p.id === photo.id) + 1}</span>
+                     <button 
+                       className="cancel-generation-btn"
+                       onClick={e => {
+                         e.stopPropagation();
+                         cancelPhotoGeneration(photo.id);
+                       }}
+                       title="Cancel generation"
+                     >
+                       <span className="icon">close</span>
+                     </button>
                   </div>
                 </div>
               ) : (
@@ -620,7 +686,48 @@ function Results({photos, favorites, selectedPhotos, focusedId, setFocusedId, bu
   )
 }
 
-function FocusedPhoto({photo, onClose, onPrev, onNext, isFavorite, children, onMakeGif}) {
+function FocusedPhoto({photo, onClose, isFavorite, children, onMakeGif, onPrevious, onNext}) {
+  const [touchStart, setTouchStart] = useState(null)
+  
+  const handleTouchStart = (e) => {
+    setTouchStart({
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+      time: Date.now()
+    })
+  }
+  
+  const handleTouchEnd = (e) => {
+    if (!touchStart) return
+    
+    const touchEndX = e.changedTouches[0].clientX
+    const touchEndY = e.changedTouches[0].clientY
+    const deltaX = touchEndX - touchStart.x
+    const deltaY = touchEndY - touchStart.y
+    const deltaTime = Date.now() - touchStart.time
+    
+    // Only process swipes that are quick enough
+    if (deltaTime < 500) {
+      const absDeltaX = Math.abs(deltaX)
+      const absDeltaY = Math.abs(deltaY)
+      
+      // Swipe down detection: vertical distance > 100px and primarily vertical
+      if (deltaY > 100 && absDeltaY > absDeltaX) {
+        onClose()
+      }
+      // Swipe left detection: horizontal distance > 100px and primarily horizontal
+      else if (deltaX < -100 && absDeltaX > absDeltaY && onNext) {
+        onNext()
+      }
+      // Swipe right detection: horizontal distance > 100px and primarily horizontal  
+      else if (deltaX > 100 && absDeltaX > absDeltaY && onPrevious) {
+        onPrevious()
+      }
+    }
+    
+    setTouchStart(null)
+  }
+
   const sharePhoto = async () => {
     try {
       const response = await fetch(imageData.outputs[photo.id])
@@ -644,7 +751,12 @@ function FocusedPhoto({photo, onClose, onPrev, onNext, isFavorite, children, onM
   }
 
   return (
-    <div className="focusedPhoto" onClick={onClose}>
+    <div 
+      className="focusedPhoto" 
+      onClick={onClose}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       <button className="focusedCloseBtn" onClick={e => { e.stopPropagation(); onClose(); }}>
         <span className="icon">close</span>
       </button>
@@ -653,12 +765,6 @@ function FocusedPhoto({photo, onClose, onPrev, onNext, isFavorite, children, onM
         <img src={imageData.outputs[photo.id]} alt="Focused photo" />
       </div>
 
-      <button className="prevButton button" onClick={e => { e.stopPropagation(); onPrev(); }}>
-        <span className="icon">arrow_back_ios</span>
-      </button>
-      <button className="nextButton button" onClick={e => { e.stopPropagation(); onNext(); }}>
-        <span className="icon">arrow_forward_ios</span>
-      </button>
 
       {children}
 

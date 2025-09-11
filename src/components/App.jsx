@@ -205,6 +205,7 @@ export default function App() {
   const stopTimers = useCallback(() => {
     clearTimeout(autoCaptureTimerRef.current)
     clearTimeout(countdownTimerRef.current)
+    clearInterval(countdownTimerRef.current) // Clear both timeout and interval
     setCountdown(null)
     setIsCountingDown(false)
     genControllersRef.current.forEach(controller => controller.abort())
@@ -308,23 +309,32 @@ export default function App() {
     }
 
     if (cameraMode === 'TIMER') {
+      // Stop any existing timers first
+      clearTimeout(countdownTimerRef.current)
+      clearInterval(countdownTimerRef.current)
       setIsCountingDown(true)
-      let count = 5
-      setCountdown(count)
+      setCountdown(5)
 
-      const timerTick = () => {
-        count--
-        if (count > 0) {
-          setCountdown(count)
-          countdownTimerRef.current = setTimeout(timerTick, 1000)
+      console.log('Starting timer countdown from 5')
+
+      // Use a simpler approach with direct countdown state management
+      let currentCount = 5
+      const timerInterval = setInterval(() => {
+        currentCount--
+        console.log('Timer tick:', currentCount)
+        if (currentCount > 0) {
+          setCountdown(currentCount)
         } else {
+          console.log('Timer finished, taking photo')
+          clearInterval(timerInterval)
           setCountdown(null)
           setIsCountingDown(false)
           takePhoto(null)
         }
-      }
-
-      countdownTimerRef.current = setTimeout(timerTick, 1000)
+      }, 1000)
+      
+      // Store the interval ID so we can clear it if needed
+      countdownTimerRef.current = timerInterval
     } else if (cameraMode === 'STREAM') {
       setAutoCapture(true)
       setLiveMode(true)

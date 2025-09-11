@@ -3,10 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 export default {
+  auto: {
+    name: 'Auto',
+    emoji: '🔄',
+    prompt: 'Automatic mode will cycle through different styles.',
+    category: 'utility'
+  },
   random: {
     name: 'Random',
-    emoji: '🎲',
-    prompt: 'A random style will be selected for each photo.',
+    emoji: '🎲', 
+    prompt: 'Truly random style selection with smart distribution to avoid repetition.',
     category: 'utility'
   },
   sf: {

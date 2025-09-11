@@ -106,7 +106,7 @@ export const init = async () => {
 
 export const snapPhoto = async (b64, signal) => {
   const id = crypto.randomUUID()
-  const {activeMode, customPrompt, photos, model, randomStyleIndex, cameraMode} = get()
+  const {activeMode, customPrompt, photos, model, randomStyleIndex, recentlyUsedModes, cameraMode} = get()
   
   console.log('Starting photo generation', { 
     id, 
@@ -120,11 +120,30 @@ export const snapPhoto = async (b64, signal) => {
   await db.set(db.STORES.INPUTS, id, b64).catch(e => console.error("Failed to save input to DB", e))
 
   let modeToUse = activeMode
-  if (modeToUse === 'random') {
-    const otherModes = Object.keys(modes).filter(k => k !== 'random')
+  if (modeToUse === 'auto') {
+    // Auto mode: sequential cycling through modes
+    const otherModes = Object.keys(modes).filter(k => k !== 'auto' && k !== 'random')
     modeToUse = otherModes[randomStyleIndex % otherModes.length]
     set(state => {
       state.randomStyleIndex = state.randomStyleIndex + 1
+    })
+  } else if (modeToUse === 'random') {
+    // Random mode: smart distribution to avoid repetition
+    const otherModes = Object.keys(modes).filter(k => k !== 'auto' && k !== 'random')
+    const availableModes = otherModes.filter(mode => !recentlyUsedModes.includes(mode))
+    
+    // If all modes have been used recently, reset the recently used list
+    const modesToChooseFrom = availableModes.length > 0 ? availableModes : otherModes
+    modeToUse = modesToChooseFrom[Math.floor(Math.random() * modesToChooseFrom.length)]
+    
+    set(state => {
+      // Add to recently used modes
+      state.recentlyUsedModes = [...state.recentlyUsedModes, modeToUse]
+      // Keep only the last 1/3 of total modes to prevent repetition
+      const maxRecentModes = Math.floor(otherModes.length / 3)
+      if (state.recentlyUsedModes.length > maxRecentModes) {
+        state.recentlyUsedModes = state.recentlyUsedModes.slice(-maxRecentModes)
+      }
     })
   }
   

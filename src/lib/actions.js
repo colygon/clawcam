@@ -2,14 +2,13 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
 */
-import gifenc from 'gifenc';
+import { GIFEncoder, quantize, applyPalette } from 'gifenc';
 import useStore from './store'
 import imageData from './imageData'
 import gen from './llm'
 import modes from './modes'
 import { db } from './db'
 
-const { GIFEncoder, quantize, applyPalette } = gifenc;
 const get = useStore.getState
 const set = useStore.setState
 const gifSize = 512
@@ -178,16 +177,6 @@ export const snapPhoto = async (b64, signal) => {
       imageData.outputs[id] = result
       await db.set(db.STORES.OUTPUTS, id, result).catch(e => console.error("Failed to save output to DB", e))
       
-      // Add to justSavedIds for UI feedback
-      set(state => {
-        state.justSavedIds.push(id)
-      })
-      setTimeout(() => {
-        set(state => {
-          state.justSavedIds = state.justSavedIds.filter(savedId => savedId !== id)
-        })
-      }, 2500) // Remove after 2.5 seconds
-
       set(state => {
         state.photos = state.photos.map(photo =>
           photo.id === id ? {...photo, isBusy: false} : photo
@@ -302,16 +291,6 @@ const processImageToCanvas = async (base64Data, size) => {
   return ctx.getImageData(0, 0, size, size)
 }
 
-const addFrameToGif = (gif, imageData, size, delay) => {
-  const palette = quantize(imageData.data, 256)
-  const indexed = applyPalette(imageData.data, palette)
-
-  gif.writeFrame(indexed, size, size, {
-    palette,
-    delay
-  })
-}
-
 export const makeGif = async () => {
   const {photos, selectedPhotos} = get()
 
@@ -341,7 +320,13 @@ export const makeGif = async () => {
         imageData.outputs[photo.id],
         gifSize
       )
-      addFrameToGif(gif, outputImageData, gifSize, 333)
+      const palette = quantize(outputImageData.data, 256)
+      const indexed = applyPalette(outputImageData.data, palette)
+
+      gif.writeFrame(indexed, gifSize, gifSize, {
+        palette,
+        delay: 333
+      })
     }
 
     gif.finish()
@@ -419,6 +404,20 @@ export const toggleFavorite = id => {
   // Save to localStorage
   const {favorites} = get()
   localStorage.setItem('fractal-favorites', JSON.stringify(favorites))
+}
+
+export const downloadPhoto = id => {
+  const dataUrl = imageData.outputs[id]
+  if (!dataUrl) {
+    console.error('No output data for photo', id)
+    return
+  }
+  const link = document.createElement('a')
+  link.href = dataUrl
+  link.download = `bananacam-${id}.png`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
 }
 
 export const togglePhotoSelection = id => {

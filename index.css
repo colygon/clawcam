@@ -164,27 +164,11 @@ main {
     display: none;
   }
   
-  /* Style action buttons to match mobile controls */
-  .resultsActions.horizontalActions {
-    position: relative;
-    right: auto;
-    align-self: center;
-    margin: 5px auto;
-    display: flex;
-    flex-direction: row;
-    gap: 15px;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(20px);
-    padding: 8px 20px;
-    border-radius: 15px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
 
   /* Make photo gallery photos bigger on mobile */
   body .results {
     height: clamp(150px, 18.75dvh, 225px) !important;
-    padding: 10px 12px !important;
+    padding: 0px 12px !important;
     position: fixed !important;
     bottom: 90px !important;
     left: 0 !important;
@@ -210,7 +194,12 @@ main {
   
   /* When both gallery and styles are visible, position gallery above the taller controls */
   main:not(.galleryHidden):not(.stylesHidden) .results {
-    bottom: 200px !important;
+    bottom: 75px !important;
+  }
+  
+  /* Override for focused photo view on mobile */
+  main .focusedPhoto .results {
+    bottom: 80px !important;
   }
   
   .results ul {
@@ -219,38 +208,6 @@ main {
   
   .results li {
     aspect-ratio: 1 / 1;
-  }
-  
-  .resultsActions.horizontalActions .button {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    border: none;
-    border-radius: 16px;
-    padding: 12px 16px;
-    font-size: 14px;
-    font-weight: 600;
-    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-    min-width: 80px;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-  }
-  
-  .resultsActions.horizontalActions .button:active {
-    transform: scale(0.95);
-  }
-  
-  .resultsActions.horizontalActions .clearButton {
-    background: rgba(255, 255, 255, 0.1) !important;
-  }
-  
-  .resultsActions.horizontalActions .button .icon {
-    font-size: 18px;
   }
 }
 .generatedPhotoView {
@@ -676,6 +633,7 @@ main:not(.stylesHidden) .bottomBarControls {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100vw;
 }
 .focusedImageWrapper {
   position: relative;
@@ -705,17 +663,34 @@ main:not(.stylesHidden) .bottomBarControls {
   position: absolute;
   top: 20px;
   right: 20px;
-  transform: translate(0, 0);
-  background: rgba(0, 0, 0, 0.9);
-  z-index: 30;
-  font-size: 23px;
-  padding: 10px;
-  border-radius: 50%;
-  filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.8));
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  transition: scale 0.2s;
+  background: rgba(44, 44, 46, 0.8);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
-  color: white;
+  z-index: 30;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.circleBtn .icon {
+  color: #007AFF;
+  font-size: 28px;
+}
+
+.circleBtn:not([disabled]):hover {
+  background: rgba(255, 255, 255, 0.1);
+  scale: 1;
+}
+
+.circleBtn:not([disabled]):active {
+  background: rgba(255, 255, 255, 0.2);
+  scale: 0.95;
 }
 
 .focusedFavoriteBtn {
@@ -1089,49 +1064,93 @@ main.galleryHidden .results {
   left: 50%;
   translate: -50% 50%;
 }
+
+.focusedPhoto .results {
+  position: fixed;
+  bottom: 80px; /* Leave space for actions bar + some padding */
+  left: 0;
+  width: 100%;
+  z-index: 121;
+  height: clamp(120px, 15dvh, 150px);
+  padding: 10px 15px !important; /* Override existing padding */
+  background: rgba(20, 20, 20, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  margin: 0 !important; /* Override margins */
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  transform: none !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+.focusedPhoto .results ul {
+  align-items: center;
+  padding-bottom: 0px;
+}
+
+/* New iOS Focused Photo Actions */
 .focusedPhotoActions {
   position: fixed;
-  bottom: 40px;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: 140px;
+  left: 0;
+  right: 0;
   display: flex;
-  gap: 15px;
-  padding: 15px 20px;
-  z-index: 25;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(20px);
-  border-radius: 25px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 25px;
+  padding-bottom: max(25px, env(safe-area-inset-bottom));
+  z-index: 125;
+  background: transparent;
+  border: none;
 }
+
 .focusedPhotoActions .button {
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(44, 44, 46, 0.8);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  color: #fff;
+  -webkit-backdrop-filter: blur(10px);
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
-  width: 50px;
-  height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.6));
+  padding: 0;
+  border: none;
+  filter: none;
+  color: #fff;
 }
-.focusedPhotoActions .button:hover {
+
+.focusedPhotoActions .button .icon {
+  font-size: 28px;
+}
+
+.focusedPhotoActions .button:not([disabled]):hover {
+  background: rgba(255, 255, 255, 0.1);
+  scale: 1;
+}
+
+.focusedPhotoActions .button:not([disabled]):active {
   background: rgba(255, 255, 255, 0.2);
-  scale: 1.1;
+  scale: 0.95;
 }
-.focusedPhotoActions .button:active {
-  scale: 0.9;
+
+.focusedPhotoActions-center {
+  display: flex;
+  gap: 8px;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 0;
+  border-radius: 0;
 }
-.focusedPhotoActions .favoriteButton.active,
-.focusedPhotoActions .favoriteButton:has(.icon[content="favorite"]) {
-  color: #ff4444;
+
+.focusedPhotoActions .button .icon {
+  color: #007AFF; /* iOS Blue */
 }
-.focusedPhotoActions .prevButton,
-.focusedPhotoActions .nextButton {
-  display: none !important;
+
+.focusedPhotoActions .button.active .icon {
+  color: #FF3B30; /* iOS Red for active favorite */
+  font-variation-settings: 'FILL' 1;
 }
 .shareMenu {
   position: absolute;
@@ -1212,9 +1231,13 @@ main.galleryHidden .results {
     pointer-events: auto !important;
     height: clamp(150px, 20dvh, 250px) !important;
     padding: 10px 20px !important;
-    padding-bottom: 20px !important;
+    padding-bottom: 10px !important;
     position: fixed !important;
     bottom: 0 !important;
+  }
+
+  .video .focusedPhoto .results {
+    bottom: 0px !important;
   }
 
   /* Desktop iPhone Camera Interface */
@@ -1231,6 +1254,9 @@ main.galleryHidden .results {
     bottom: 80px;
   }
   
+  .iphoneCameraSwitch {
+    display: none;
+  }
 
   .iphonePreviewBtn,
   .iphonePreviewEmpty {
@@ -1260,33 +1286,6 @@ main.galleryHidden .results {
     background: rgba(0, 0, 0, 0.3);
     cursor: pointer;
   }
-
-  .iphoneCameraSwitch {
-    position: fixed;
-    bottom: 250px;
-    right: 50px;
-    z-index: 105;
-    transition: bottom 0.3s ease-in-out;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.7);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-size: 20px;
-    cursor: pointer;
-    transition: all 0.2s;
-    transform: scale(0.95);
-    
-  }
-
-  /* Move Camera switch button down when gallery is hidden (regardless of styles) */
-  main.galleryHidden .iphoneCameraSwitch {
-    bottom: 80px;
-  }
-  
 
   /* Desktop camera modes */
   .iphoneCameraModes {
@@ -1338,41 +1337,8 @@ main.galleryHidden .results {
     color: #FFD700;
     background: rgba(255, 215, 0, 0.2);
   }
-
-  /* Desktop styles grid - hide emoji only styles */
-  .iphoneStylesGrid {
-    display: none !important;
-  }
-
-  .iphoneStylesGrid::-webkit-scrollbar {
-    display: none !important;
-  }
 }
 
-/* Desktop button styles - match GIF button */
-@media (min-width: 769px) {
-  .resultsActions.horizontalActions .button {
-    background: rgba(255, 255, 255, 0.1) !important;
-    border: none !important;
-    color: #fff !important;
-    filter: none !important;
-    text-transform: none !important;
-    padding: 12px 16px !important;
-    border-radius: 16px !important;
-    white-space: nowrap !important;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
-  }
-}
-
-.resultsActions.horizontalActions .makeGif {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border-radius: 50% !important;
-  width: 56px;
-  height: 56px;
-  padding: 0 !important;
-}
 @keyframes shimmer {
   0% {
     background-position: -200% 0;
@@ -1403,8 +1369,8 @@ main.galleryHidden .results {
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 4px 20px #00000080;
   pointer-events: none;
-  width: 250px;
-  white-space: normal;
+  width: auto;
+  white-space: nowrap;
   animation: tooltipFadeIn 0.2s ease-out forwards;
   color: #ccc;
 }
@@ -1456,14 +1422,6 @@ main.galleryHidden .results {
   color: #777;
   margin-top: 5px;
 }
-.resultsActions {
-  position: sticky;
-  right: 15px;
-  align-self: center;
-  margin-left: auto;
-  display: flex;
-  gap: 10px;
-}
 .verticalActions {
   position: sticky;
   right: 15px;
@@ -1473,18 +1431,11 @@ main.galleryHidden .results {
   flex-direction: column;
   gap: 8px;
 }
-.resultsActions.horizontalActions .replayButton {
-  background: rgba(255, 255, 255, 0.1) !important;
-}
-
-.resultsActions.horizontalActions .shareButton {
-  background: rgba(255, 255, 255, 0.1) !important;
-}
 .replayView {
   position: fixed;
   inset: 0;
   background: #000;
-  z-index: 100;
+  z-index: 110;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1526,29 +1477,33 @@ main.galleryHidden .results {
   top: 15px;
   left: 15px;
   z-index: 130;
-  width: 40px;
-  height: 40px;
-  background: rgba(0, 0, 0, 0.7);
+  width: 56px;
+  height: 56px;
+  background: rgba(44, 44, 46, 0.8);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  -webkit-backdrop-filter: blur(10px);
+  border: none;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  font-size: 18px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .topLeftPlayBtn:hover {
-  background: rgba(0, 0, 0, 0.9);
-  border-color: rgba(255, 255, 255, 0.9);
-  transform: scale(1.05);
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1);
 }
 
 .topLeftPlayBtn:active {
+  background: rgba(255, 255, 255, 0.2);
   transform: scale(0.95);
+}
+
+.topLeftPlayBtn .icon {
+  color: #007AFF;
+  font-size: 28px;
 }
 
 /* Make play button triangle solid */
@@ -1645,6 +1600,20 @@ main.galleryHidden .results {
     width: 140px;
     height: 105px;
   }
+
+  /* In landscape focused mode, move action buttons to the bottom */
+  .focusedPhotoActions {
+    bottom: 0 !important;
+    /* Add back safe-area padding since it's now at the screen edge */
+    padding-bottom: max(25px, env(safe-area-inset-bottom)) !important;
+  }
+
+  /* And move the gallery above the action buttons */
+  .focusedPhoto .results {
+    bottom: 80px !important; /* Position it above the action bar */
+    height: clamp(90px, 25dvh, 110px) !important;
+    padding-top: 10px !important;
+  }
 }
 
 /* iPhone Camera UI (Common for Mobile & Desktop) */
@@ -1713,6 +1682,15 @@ main.galleryHidden .results {
     flex-direction: column;
     gap: 5px;
     width: 100%;
+  }
+
+  /* When streaming, make background transparent and hide elements */
+  .iphoneCameraModesAndShutterWrapper.streaming {
+    background: transparent;
+  }
+  .streaming .iphonePhotoPreview,
+  .streaming .iphoneCameraSwitch {
+    visibility: hidden;
   }
 
   /* Timer Display when active */
@@ -1875,11 +1853,6 @@ main.galleryHidden .results {
     font-size: 20px;
   }
   
-  /* Hide old mobile controls and unused elements */
-  .mobileControls, .iphoneStylesButton {
-    display: none !important;
-  }
-
   /* Ensure focused photo is full screen on mobile */
   .focusedImageWrapper {
     width: 100vw !important;
@@ -1898,16 +1871,17 @@ main.galleryHidden .results {
 
   /* Mobile-optimized focused photo actions */
   .focusedPhotoActions {
-    bottom: max(40px, env(safe-area-inset-bottom)) !important;
-    gap: 20px !important;
+    bottom: 0 !important;
+    gap: 0 !important;
     padding: 20px 25px !important;
-    z-index: 110 !important;
+    padding-bottom: max(25px, env(safe-area-inset-bottom)) !important;
+    z-index: 125 !important;
   }
 
   .focusedPhotoActions .button {
     width: 56px !important;
     height: 56px !important;
-    border-width: 2px !important;
+    border-width: 0 !important;
     backdrop-filter: blur(15px) !important;
   }
 
@@ -1949,9 +1923,10 @@ main.galleryHidden .results {
     display: none !important;
   }
   
-  main:has(.focusedPhoto) .results {
+  /* This rule is now overridden by the new gallery-in-focus-mode style */
+  /* main:has(.focusedPhoto) .results {
     display: none !important;
-  }
+  } */
 
 }
 
@@ -1962,18 +1937,31 @@ main.galleryHidden .results {
   top: 50%;
   transform: translateY(-50%);
   z-index: 125;
-  background: rgba(0, 0, 0, 0.6) !important;
-  backdrop-filter: blur(10px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.4) !important;
-  color: #fff !important;
-  border-radius: 50% !important;
-  width: 56px !important;
-  height: 56px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  cursor: pointer !important;
-  transition: all 0.2s !important;
+  background: rgba(44, 44, 46, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: none;
+  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.focusedPhoto .prevButton:hover,
+.focusedPhoto .nextButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-50%) scale(1);
+}
+
+.focusedPhoto .prevButton:active,
+.focusedPhoto .nextButton:active {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-50%) scale(0.95);
 }
 
 .focusedPhoto .prevButton {
@@ -1986,54 +1974,8 @@ main.galleryHidden .results {
 
 .focusedPhoto .prevButton .icon,
 .focusedPhoto .nextButton .icon {
-  font-size: 24px !important;
-}
-.savedIndicator {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 11;
-  background: rgba(40, 167, 69, 0.8);
-  color: white;
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  animation: saved-fade-in-out 2.5s ease-in-out forwards;
-  pointer-events: none;
-}
-
-.savedIndicator .icon {
-  font-size: 32px;
-  font-weight: 600;
-}
-
-@keyframes saved-fade-in-out {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.5);
-  }
-  15% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1.1);
-  }
-  30% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
-  85% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.5);
-  }
+  font-size: 28px;
+  color: #007AFF;
 }
 .queue-counter {
   position: absolute;
@@ -2052,4 +1994,38 @@ main.galleryHidden .results {
   border: 2px solid white;
   z-index: 1;
   pointer-events: none;
+}
+
+.focusedCloseBtn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 130;
+  width: 56px;
+  height: 56px;
+  background: rgba(44, 44, 46, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.focusedCloseBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1);
+}
+
+.focusedCloseBtn:active {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(0.95);
+}
+
+.focusedCloseBtn .icon {
+  color: #007AFF;
+  font-size: 28px;
 }

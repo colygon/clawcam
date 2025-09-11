@@ -17,10 +17,9 @@ import {
   toggleFavorite,
   togglePhotoSelection,
   selectAllPhotos,
-  deselectAllPhotos,
-  deleteSelectedPhotos,
   init,
-  setCameraMode
+  setCameraMode,
+  downloadPhoto
 } from '../lib/actions'
 import useStore from '../lib/store'
 import imageData from '../lib/imageData'
@@ -41,7 +40,6 @@ export default function App() {
   const liveMode = useStore.use.liveMode()
   const replayMode = useStore.use.replayMode()
   const cameraMode = useStore.use.cameraMode()
-  const justSavedIds = useStore.use.justSavedIds()
 
   const [videoActive, setVideoActive] = useState(false)
   const [focusedId, setFocusedId] = useState(null)
@@ -241,7 +239,7 @@ export default function App() {
       });
     };
 
-    if (cameraMode === 'NONSTOP') {
+    if (cameraMode === 'STREAM') {
       const continuousCapture = () => {
         performCapture();
         autoCaptureTimerRef.current = setTimeout(continuousCapture, 5000); // 5-second interval
@@ -275,636 +273,643 @@ export default function App() {
             event.preventDefault()
             setFocusedId(null)
             break
+          case 'f':
+            event.preventDefault()
+            toggleFavorite(focusedId)
+            break
+          case 'd':
+          case 'Backspace':
+          case 'Delete':
+            event.preventDefault()
+            deletePhoto(focusedId)
+            setFocusedId(null)
+            break
         }
       }
     }
 
-    if (focusedId && !gifUrl) {
-      document.addEventListener('keydown', handleKeyDown)
-    }
-
+    window.addEventListener('keydown', handleKeyDown)
     return () => {
-      document.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keydown', handleKeyDown)
     }
   }, [focusedId, gifUrl, goToPreviousPhoto, goToNextPhoto])
 
+  useEffect(() => {
+    // Manage gallery visibility based on device and photos
+    if (isDesktop && photos.length > 0) {
+      setGalleryVisible(true);
+    } else if (!isDesktop) {
+      // Always hide main gallery on mobile
+      setGalleryVisible(false);
+    }
+  }, [isDesktop, photos.length]);
 
+  // Focused image gesture handling for mobile
+  useEffect(() => {
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    const handleTouchStart = (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    };
+
+    const handleTouchEnd = (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    };
+
+    const handleSwipe = () => {
+      if (touchEndX < touchStartX - 50) { // Swiped left
+        goToNextPhoto();
+      }
+      if (touchEndX > touchStartX + 50) { // Swiped right
+        goToPreviousPhoto();
+      }
+    };
+
+    const focusedElement = document.querySelector('.focusedPhoto');
+    if (focusedElement) {
+      focusedElement.addEventListener('touchstart', handleTouchStart);
+      focusedElement.addEventListener('touchend', handleTouchEnd);
+    }
+
+    return () => {
+      if (focusedElement) {
+        focusedElement.removeEventListener('touchstart', handleTouchStart);
+        focusedElement.removeEventListener('touchend', handleTouchEnd);
+      }
+    };
+  }, [focusedId, goToNextPhoto, goToPreviousPhoto]);
+  
   const handlePhotoButtonClick = () => {
-    if (autoCapture || isCountingDown) {
+    // If we're already auto-capturing, this button acts as a stop button
+    if (autoCapture) {
       stopTimers()
       return
     }
 
-    if (cameraMode === 'NONSTOP') {
-        setLiveMode(true)
-        setAutoCapture(true)
-    } else if (cameraMode === 'TIMER') {
-      setIsCountingDown(true)
+    if (cameraMode === 'TIMER') {
       let count = 5
-      const tick = () => {
+      setCountdown(count)
+      setIsCountingDown(true)
+
+      const timerTick = () => {
+        count--
+        setCountdown(count > 0 ? count : null)
         if (count > 0) {
-          setCountdown(count)
-          count--
-          countdownTimerRef.current = setTimeout(tick, 1000)
+          countdownTimerRef.current = setTimeout(timerTick, 1000)
         } else {
-          setCountdown(null)
-          takePhoto()
           setIsCountingDown(false)
+          takePhoto(null)
         }
       }
-      tick()
-    } else { // PHOTO or POSTCARD mode
-      takePhoto()
-    }
-  }
 
-  const downloadGif = () => {
-    const a = document.createElement('a')
-    a.href = gifUrl
-    a.download = 'gembooth.gif'
-    a.click()
-  }
-
-  const sharePhoto = (photoId, platform) => {
-    const imageUrl = imageData.outputs[photoId]
-    if (!imageUrl) return
-
-    const photo = photos.find(p => p.id === photoId)
-    if (!photo) return
-
-    const style = modes[photo.mode] || {}
-    const postcardText = style.postcardText || "Check out my AI-generated photo!"
-    const shareText = `${postcardText}\npowered by Nano Banana.`
-
-    // Convert base64 to blob for sharing
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')
-    const img = new Image()
-    
-    img.onload = () => {
-      canvas.width = img.width
-      canvas.height = img.height
-      ctx.drawImage(img, 0, 0)
-      
-      canvas.toBlob(blob => {
-        if (navigator.share && platform === 'native') {
-          navigator.share({
-            title: 'Check out my AI-generated photo!',
-            text: shareText,
-            files: [new File([blob], 'banana-cam-photo.jpg', { type: 'image/jpeg' })]
-          })
-        } else {
-          // Fallback: download image for manual sharing
-          const url = URL.createObjectURL(blob)
-          const a = document.createElement('a')
-          a.href = url
-          a.download = `banana-cam-${photoId}.jpg`
-          a.click()
-          URL.revokeObjectURL(url)
-        }
-      }, 'image/jpeg', 0.9)
-    }
-    
-    img.src = imageUrl
-  }
-
-  const handleModeHover = useCallback(
-    (modeInfo, event) => {
-      if (!modeInfo) {
-        setHoveredMode(null)
-        return
-      }
-
-      setHoveredMode(modeInfo)
-
-      const rect = event.currentTarget.getBoundingClientRect()
-      const tooltipTop = rect.top
-      const tooltipLeft = rect.left + rect.width / 2
-
-      setTooltipPosition({
-        top: tooltipTop,
-        left: tooltipLeft
-      })
-    },
-    [customPrompt]
-  )
-
-  const handleCameraToggle = () => {
-    if (isDesktop) {
-      setDesktopMirror(m => !m)
+      countdownTimerRef.current = setTimeout(timerTick, 1000)
+    } else if (cameraMode === 'STREAM') {
+      setAutoCapture(true)
+      setLiveMode(true)
     } else {
-      setFacingMode(f => (f === 'user' ? 'environment' : 'user'))
+      // Normal photo
+      takePhoto(null)
     }
   }
+
+  const focusedPhoto = focusedId ? photos.find(p => p.id === focusedId) : null
+  const hideControls = liveMode && cameraMode === 'STREAM'
+
+  const memoizedHandleModeClick = useCallback((mode) => {
+    setMode(mode);
+    if (!isDesktop) {
+      setStylesVisible(false);
+    }
+  }, [isDesktop]);
 
   return (
     <main
       className={c({
-        stylesHidden: !stylesVisible,
-        galleryHidden: !galleryVisible
+        galleryHidden: !galleryVisible,
+        stylesHidden: !stylesVisible
       })}
     >
-      {/* Play/Stop Button - Top Left */}
-      {photos.length > 0 && (
-        <button
-          className="topLeftPlayBtn"
-          onClick={() => setReplayMode(!replayMode)}
-          aria-label={replayMode ? "Stop slideshow" : "Play slideshow"}
-        >
-          <span className="icon">{replayMode ? 'stop' : 'play_arrow'}</span>
-        </button>
-      )}
-
-      {replayMode ? (
-        <div className="replayView">
-          {replayPhotos.length > 0 && (
-            <img
-              src={imageData.outputs[replayPhotos[replayImageIndex].id]}
-              alt="Replay of generated art"
-            />
-          )}
-        </div>
-      ) : (
+      {liveMode && (
         <>
-          {liveMode && (
-            <button
-              onClick={stopTimers}
-              className={c('liveButton active')}
-            >
-              Live
-            </button>
-          )}
-
-          <div
-            className={c('video')}
-            onClick={() => (gifUrl ? hideGif() : setFocusedId(null))}
-          >
+          <button className={c('liveButton', {active: autoCapture})}>
+            Live
+          </button>
+          <div className="pipWebcam">
             <video
-              ref={videoRef}
-              muted
-              autoPlay
+              ref={pipVideoRef}
               playsInline
-              disablePictureInPicture="true"
-              style={{
-                display: liveMode && latestFinishedPhoto ? 'none' : 'block',
-                ...videoTransform
-              }}
+              autoPlay
+              muted
+              style={videoTransform}
             />
-            {!liveMode && <div className={c('flash', {active: showFlash})} />}
-            {liveMode && latestFinishedPhoto && (
-              <div className="liveGifView">
-                {imageData.outputs[latestFinishedPhoto.id] && (
-                  <img
-                    src={imageData.outputs[latestFinishedPhoto.id]}
-                    alt="Live generated art"
-                  />
-                )}
-                {/* Picture-in-picture webcam in live mode */}
-                <div className="pipWebcam">
-                  <video
-                    ref={el => {
-                      pipVideoRef.current = el
-                      if (el && streamRef.current) {
-                        el.srcObject = streamRef.current
-                        el.onloadedmetadata = () => {
-                          el.play()
-                        }
-                      }
-                    }}
-                    muted
-                    autoPlay
-                    playsInline
-                    disablePictureInPicture="true"
-                    style={videoTransform}
-                  />
-                </div>
-              </div>
-            )}
-
-            {countdown && <div className="countdown" key={countdown}>{countdown}</div>}
-            {showCustomPrompt && (
-              <div className="customPrompt">
-                <div className="customPromptContent">
-                  <h3>Custom Style Prompt</h3>
-                  <textarea
-                    type="text"
-                    placeholder="Write your custom transformation prompt..."
-                    value={customPrompt || "Transform the person into a mystical wizard with flowing robes and glowing magical aura, preserving their exact facial features and natural expression. Create realistic shadows cast by floating magical orbs of light surrounding them. Place them in an enchanted forest with ancient trees and sparkling fireflies, ensuring the magical lighting creates authentic ethereal shadows and highlights that capture the wonder of a spellbinding fantasy realm."}
-                    onChange={e => setCustomPrompt(e.target.value)}
-                    rows={6}
-                  />
-                  <button
-                    className="saveButton"
-                    onClick={() => {
-                      setShowCustomPrompt(false)
-                      if (customPrompt.trim().length === 0) {
-                        setMode(modeKeys[0])
-                      }
-                    }}
-                  >
-                    <span className="icon">save</span>
-                    Save
-                  </button>
-                </div>
-              </div>
-            )}
-
-
-            {(focusedId || gifUrl) && (
-              <div className="focusedPhoto" onClick={e => e.stopPropagation()}>
-                <div className="focusedImageWrapper">
-                  <img
-                    src={gifUrl || imageData.outputs[focusedId]}
-                    alt="photo"
-                    draggable={false}
-                  />
-                </div>
-                {focusedId && !gifUrl && validPhotos.length > 1 && (
-                  <>
-                    <button 
-                      className="button prevButton" 
-                      onClick={goToPreviousPhoto}
-                      aria-label="Previous photo"
-                    >
-                      <span className="icon">chevron_left</span>
-                    </button>
-                    <button 
-                      className="button nextButton" 
-                      onClick={goToNextPhoto}
-                      aria-label="Next photo"
-                    >
-                      <span className="icon">chevron_right</span>
-                    </button>
-                  </>
-                )}
-                {gifUrl && (
-                  <div className="focusedPhotoActions">
-                    <button className="button downloadButton" onClick={downloadGif}>
-                      <span className="icon">download</span>
-                      Download
-                    </button>
-                    <button 
-                      className="button closeButton" 
-                      onClick={() => hideGif()}
-                      aria-label="Close GIF"
-                    >
-                      <span className="icon">close</span>
-                    </button>
-                  </div>
-                )}
-                {focusedId && !gifUrl && (
-                  <>
-
-                    <div className="focusedPhotoActions">
-                      <button 
-                        className="button favoriteButton" 
-                        onClick={() => toggleFavorite(focusedId)}
-                        aria-label={favorites.includes(focusedId) ? "Remove from favorites" : "Add to favorites"}
-                      >
-                        <span className="icon">{favorites.includes(focusedId) ? 'favorite' : 'favorite_border'}</span>
-                      </button>
-                      <button 
-                        className="button shareButton" 
-                        onClick={() => sharePhoto(focusedId, 'native')}
-                      >
-                        <span className="icon">share</span>
-                      </button>
-                      <button 
-                        className="button deleteButton" 
-                        onClick={() => {
-                          deletePhoto(focusedId)
-                          setFocusedId(null)
-                        }}
-                        aria-label="Delete photo"
-                      >
-                        <span className="icon">delete</span>
-                      </button>
-                      <button 
-                        className="button closeButton" 
-                        onClick={() => setFocusedId(null)}
-                        aria-label="Close photo"
-                      >
-                        <span className="icon">close</span>
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
           </div>
-
-
-          <div className="results">
-            <ul>
-              {photos.length > 0
-                ? photos
-                    .filter(({id, isBusy}, index) => {
-                      // Always show the most recent photo (index 0), even if busy
-                      if (index === 0) return true
-                      
-                      // For older photos, only show if finished and have valid output
-                      if (isBusy) return false
-                      const output = imageData.outputs[id]
-                      const hasValidOutput = output && typeof output === 'string' && output.length > 100 && output.startsWith('data:image/')
-                      return hasValidOutput
-                    })
-                    .map(({id, mode, isBusy}) => (
-                    <li key={id}>
-                      {justSavedIds.includes(id) && (
-                        <div className="savedIndicator">
-                          <span className="icon">check_circle</span>
-                        </div>
-                      )}
-                      <label className="photoSelector">
-                        <input
-                          type="checkbox"
-                          checked={selectedPhotos.includes(id) && !isBusy}
-                          onChange={() => !isBusy && togglePhotoSelection(id)}
-                          disabled={isBusy}
-                        />
-                        <span className="checkmark">
-                          <span className="selectionNumber">
-                            {selectedPhotos.includes(id) && !isBusy ? selectedPhotos.indexOf(id) + 1 : ''}
-                          </span>
-                        </span>
-                      </label>
-                      <button
-                        className={c("photo", {
-                          generating: isBusy,
-                          failed: !isBusy && (!imageData.outputs[id] || !imageData.outputs[id].startsWith('data:image/'))
-                        })}
-                        onClick={() => {
-                          if (!isBusy) {
-                            if (imageData.outputs[id] && imageData.outputs[id].startsWith('data:image/')) {
-                              setFocusedId(id)
-                              hideGif()
-                            }
-                            // For broken photos, clicking does nothing but they can still be selected via checkbox
-                          }
-                        }}
-                      >
-                        {!isBusy && imageData.outputs[id] && imageData.outputs[id].startsWith('data:image/') ? (
-                          <img
-                            src={imageData.outputs[id]}
-                            draggable={false}
-                          />
-                        ) : isBusy && imageData.inputs[id] ? (
-                          <div className="photo-generating">
-                            <img
-                              src={imageData.inputs[id]}
-                              draggable={false}
-                              className="generating-base-image"
-                            />
-                            <div className="shimmer-overlay">
-                              <span className="icon">hourglass_top</span>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className={c("photo-placeholder", {shimmer: isBusy})}>
-                            <span className="icon">
-                              {isBusy ? 'hourglass_top' : 
-                               (!imageData.outputs[id] || !imageData.outputs[id].startsWith('data:image/')) ? 'error' : 
-                               'hourglass_empty'}
-                            </span>
-                          </div>
-                        )}
-                        <p className="emoji">
-                          {mode === 'custom' ? '✏️' : modes[mode]?.emoji}
-                        </p>
-                        {favorites.includes(id) && (
-                          <button
-                            className="favoriteIndicator"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              toggleFavorite(id)
-                            }}
-                          >
-                            <span className="icon">favorite</span>
-                          </button>
-                        )}
-                        {!favorites.includes(id) && !isBusy && (
-                          <button
-                            className="favoriteIndicator unfavorited"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              toggleFavorite(id)
-                            }}
-                          >
-                            <span className="icon">favorite_border</span>
-                          </button>
-                        )}
-                      </button>
-                    </li>
-                  ))
-                : videoActive && (
-                    <li className="empty" key="empty">
-                      <p>
-                        <span className="icon">auto_awesome</span>
-                      </p>
-                      {'Take a photo or press Auto to begin'}
-                    </li>
-                  )}
-            </ul>
-            {photos.filter(p => !p.isBusy).length > 0 && (
-              <div className="resultsActions horizontalActions">
-                <button
-                  className="button makeGif"
-                  onClick={makeGif}
-                  disabled={gifInProgress}
-                  aria-label={gifInProgress ? 'Making GIF...' : 'Make GIF'}
-                >
-                  <span className="icon">gif</span>
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Desktop Styles Panel */}
-          {isDesktop && (
-            <div className="modeRows">
-              <ul className="filterSelector">
-                <li>
-                  <button
-                    className={c({active: activeMode === 'custom'})}
-                    onClick={() => {
-                      setMode('custom')
-                      setShowCustomPrompt(true)
-                    }}
-                    onMouseEnter={e =>
-                      handleModeHover(
-                        {
-                          key: 'custom',
-                          name: 'Custom Prompt',
-                          prompt: customPrompt
-                        },
-                        e
-                      )
-                    }
-                    onMouseLeave={() => handleModeHover(null)}
-                  >
-                    ✏️ Custom
-                  </button>
-                </li>
-                {Object.entries(modes).map(([key, mode]) => (
-                  <li key={key}>
-                    <button
-                      className={c({active: key === activeMode})}
-                      onClick={() => setMode(key)}
-                      onMouseEnter={e => handleModeHover({key, ...mode}, e)}
-                      onMouseLeave={() => handleModeHover(null)}
-                    >
-                      {mode.emoji} {mode.name}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* iPhone-style Camera Controls */}
-          <div className="iphoneCameraControls">
-            {/* Timer Display when active */}
-            {cameraMode === 'TIMER' && (
-              <div className="iphoneTimerActiveDisplay">
-                <span className="icon">timer</span>
-                <span>5s</span>
-              </div>
-            )}
-
-            {/* Styles Grid (Mobile) */}
-            {stylesVisible && (
-              <div className="iphoneStylesGrid">
-                <button
-                  className={c("iphoneStyleEmojiBtn", {active: activeMode === 'custom'})}
-                  onClick={() => {
-                    setMode('custom')
-                    setShowCustomPrompt(true)
-                  }}
-                >
-                  ✏️
-                </button>
-                {Object.entries(modes).map(([key, {name, emoji}]) => (
-                  <button
-                    key={key}
-                    className={c("iphoneStyleEmojiBtn", {active: key === activeMode})}
-                    onClick={() => setMode(key)}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Wrapper for modes and shutter to have background */}
-            <div className="iphoneCameraModesAndShutterWrapper">
-              {/* Camera Modes Row */}
-              <div className="iphoneCameraModes">
-                <button
-                  className={c("iphoneModeBtn", {active: cameraMode === 'NONSTOP'})}
-                  onClick={() => setCameraMode('NONSTOP')}
-                >
-                  NONSTOP
-                </button>
-                <button
-                  className={c("iphoneModeBtn", {active: cameraMode === 'PHOTO'})}
-                  onClick={() => setCameraMode('PHOTO')}
-                >
-                  PHOTO
-                </button>
-                <button
-                  className={c("iphoneModeBtn", {active: cameraMode === 'POSTCARD'})}
-                  onClick={() => setCameraMode('POSTCARD')}
-                >
-                  POSTCARD
-                </button>
-                <button
-                  className={c("iphoneModeBtn", {active: cameraMode === 'TIMER'})}
-                  onClick={() => setCameraMode('TIMER')}
-                >
-                  TIMER
-                </button>
-              </div>
-
-              {/* Bottom Camera Controls Bar */}
-              <div className="iphoneCameraBottom">
-                {/* Photo Preview (Left) */}
-                <div className={photos.length > 0 ? "iphonePhotoPreview" : "iphonePhotoPreview-placeholder"}>
-                  {busyPhotos.length > 0 && (
-                    <div className="queue-counter">{busyPhotos.length}</div>
-                  )}
-                  {photos.length > 0 && (
-                    latestFinishedPhoto && imageData.outputs[latestFinishedPhoto.id] ? (
-                      <button
-                        className="iphonePreviewBtn"
-                        onClick={() => setGalleryVisible(!galleryVisible)}
-                        aria-label="Toggle gallery"
-                      >
-                        <img
-                          src={imageData.outputs[latestFinishedPhoto.id]}
-                          alt="Latest photo - tap to open gallery"
-                          className="iphonePreviewImg"
-                        />
-                      </button>
-                    ) : (
-                      <button
-                        className="iphonePreviewEmpty"
-                        onClick={() => setGalleryVisible(!galleryVisible)}
-                        aria-label="Toggle gallery"
-                      >
-                        <span className="icon">photo</span>
-                      </button>
-                    )
-                  )}
-                </div>
-
-                {/* Camera Shutter (Center) */}
-                <div className="iphoneCameraShutter">
-                  <button
-                    onClick={handlePhotoButtonClick}
-                    className={c("iphoneShutterBtn", {recording: autoCapture || isCountingDown})}
-                    aria-label={autoCapture || isCountingDown ? "Stop capture" : "Take Photo"}
-                  >
-                    <div className={c("iphoneShutterInner", {recording: autoCapture || isCountingDown})}></div>
-                  </button>
-                </div>
-
-                {/* Camera Flip Button (Right) */}
-                {!isDesktop && (
-                  <div className="iphoneCameraSwitch">
-                    <button
-                      className="iphoneSwitchBtn"
-                      onClick={handleCameraToggle}
-                      aria-label={'Switch camera'}
-                    >
-                      <span className="icon">cameraswitch</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-
-          {hoveredMode && stylesVisible && (
-            <div
-              className={c('tooltip', {isFirst: hoveredMode.key === 'custom'})}
-              role="tooltip"
-              style={{
-                top: tooltipPosition.top,
-                left: tooltipPosition.left,
-                transform: 'translateX(-50%)'
-              }}
-            >
-              {hoveredMode.key === 'custom' && !hoveredMode.prompt.length ? (
-                <p>Click to set a custom prompt</p>
-              ) : (
-                <p>{hoveredMode.name}</p>
-              )}
-            </div>
-          )}
-          
         </>
       )}
+
+      {!hideControls && !gifUrl && photos.length > 0 && !replayMode && (
+        <div className="topLeftPlayBtn" onClick={() => setReplayMode(true)}>
+          <span className="icon">play_arrow</span>
+        </div>
+      )}
+
+      {replayMode && replayPhotos.length > 0 && (
+        <div className="replayView">
+          <img src={imageData.outputs[replayPhotos[replayImageIndex].id]} />
+          <div
+            className="topLeftPlayBtn"
+            onClick={() => setReplayMode(false)}
+          >
+            <span className="icon">stop</span>
+          </div>
+        </div>
+      )}
+
+      <div className="video">
+        <video
+          ref={videoRef}
+          playsInline
+          autoPlay
+          muted
+          style={videoTransform}
+        />
+        <div className={c('flash', {active: showFlash})} />
+
+        {countdown && <div className="countdown">{countdown}</div>}
+
+        {!hideControls && !focusedId && <Results
+          photos={photos}
+          favorites={favorites}
+          selectedPhotos={selectedPhotos}
+          focusedId={focusedId}
+          setFocusedId={setFocusedId}
+          busyPhotos={busyPhotos}
+        />}
+
+        {focusedId && (
+          <FocusedPhoto
+            photo={focusedPhoto}
+            onClose={() => setFocusedId(null)}
+            onPrev={goToPreviousPhoto}
+            onNext={goToNextPhoto}
+            isFavorite={favorites.includes(focusedId)}
+            onMakeGif={makeGif}
+          >
+            <Results
+              photos={photos}
+              favorites={favorites}
+              selectedPhotos={selectedPhotos}
+              focusedId={focusedId}
+              setFocusedId={setFocusedId}
+              busyPhotos={busyPhotos}
+            />
+          </FocusedPhoto>
+        )}
+
+        {gifUrl && (
+          <div className="liveGifView">
+            <img src={gifUrl} />
+            <button
+              className="circleBtn"
+              style={{
+                top: '20px',
+                right: '20px',
+                zIndex: 10
+              }}
+              onClick={hideGif}
+            >
+              <span className="icon">close</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {showCustomPrompt && (
+        <div className="customPrompt">
+          <div className="customPromptContent">
+            <h3>Custom Prompt</h3>
+            <textarea
+              defaultValue={customPrompt}
+              placeholder="Describe your desired transformation..."
+            />
+            <button
+              className="saveButton"
+              onClick={e => {
+                const newPrompt = e.currentTarget.previousSibling.value
+                setCustomPrompt(newPrompt)
+                setShowCustomPrompt(false)
+              }}
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      )}
+      
+      <IphoneCameraControls
+        isStreaming={hideControls}
+        latestFinishedPhoto={latestFinishedPhoto}
+        photos={photos}
+        galleryVisible={galleryVisible}
+        setGalleryVisible={setGalleryVisible}
+        activeMode={activeMode}
+        onModeClick={memoizedHandleModeClick}
+        onShutterClick={handlePhotoButtonClick}
+        autoCapture={autoCapture}
+        isCountingDown={isCountingDown}
+        isDesktop={isDesktop}
+        cameraMode={cameraMode}
+        setCameraMode={setCameraMode}
+        facingMode={facingMode}
+        setFacingMode={setFacingMode}
+        desktopMirror={desktopMirror}
+        setDesktopMirror={setDesktopMirror}
+        stopTimers={stopTimers}
+        stylesVisible={stylesVisible}
+        setStylesVisible={setStylesVisible}
+        busyPhotos={busyPhotos}
+        setFocusedId={setFocusedId}
+        setShowCustomPrompt={setShowCustomPrompt}
+        customPrompt={customPrompt}
+      />
     </main>
+  )
+}
+
+function Results({photos, favorites, selectedPhotos, focusedId, setFocusedId, busyPhotos}) {
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
+
+  if (photos.length === 0) {
+    return null
+  }
+
+  return (
+    <div className={c('results', {'has-selection': selectedPhotos.length > 0})}>
+      <ul>
+        {photos.map(photo => (
+          <li
+            key={photo.id}
+            className={c({
+              isBusy: photo.isBusy,
+              isSelected: selectedPhotos.includes(photo.id),
+            })}
+            onClick={e => {
+              e.stopPropagation();
+              // Clicks on other controls inside the LI are stopped separately.
+              // This handler is for the photo itself.
+              !photo.isBusy && setFocusedId(photo.id);
+            }}
+          >
+            <div className="photo">
+              {photo.isBusy ? (
+                <div className="photo-generating">
+                  <img
+                    className="generating-base-image"
+                    src={imageData.inputs[photo.id]}
+                    alt="Generating..."
+                  />
+                  <div className="shimmer-overlay">
+                     <span className="queue-number">{busyPhotos.findIndex(p => p.id === photo.id) + 1}</span>
+                  </div>
+                </div>
+              ) : (
+                imageData.outputs[photo.id] ? (
+                  <img src={imageData.outputs[photo.id]} alt="Generated photo" />
+                ) : (
+                  <div className="photo-placeholder failed">
+                    <span className="icon">error</span>
+                  </div>
+                )
+              )}
+            </div>
+
+            {!photo.isBusy && (
+              <>
+                <label className="photoSelector" onClick={e => e.stopPropagation()}>
+                  <input
+                    type="checkbox"
+                    checked={selectedPhotos.includes(photo.id)}
+                    onChange={() => togglePhotoSelection(photo.id)}
+                  />
+                  <span className="checkmark">
+                    <span className="selectionNumber">
+                      {selectedPhotos.indexOf(photo.id) + 1}
+                    </span>
+                  </span>
+                </label>
+                <div className="emoji">{modes[photo.mode]?.emoji}</div>
+                <button
+                  className={c('favoriteIndicator', {
+                    unfavorited: !favorites.includes(photo.id)
+                  })}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleFavorite(photo.id)
+                  }}
+                >
+                  <span className="icon">favorite</span>
+                </button>
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
+
+    </div>
+  )
+}
+
+function FocusedPhoto({photo, onClose, onPrev, onNext, isFavorite, children, onMakeGif}) {
+  const sharePhoto = async () => {
+    try {
+      const response = await fetch(imageData.outputs[photo.id])
+      const blob = await response.blob()
+      const file = new File([blob], 'photo.jpg', {type: 'image/jpeg'})
+      const postcardMessage = modes[photo.mode]?.postcardText || '';
+      
+      const shareData = {
+        files: [file],
+        text: `${postcardMessage}\nI took this photo with Banana Cam - visit www.banana.cam to try it yourself!`,
+      }
+      if (navigator.canShare && navigator.canShare(shareData)) {
+        await navigator.share(shareData)
+      } else {
+        alert("Sharing not supported on this browser.")
+      }
+    } catch (error) {
+      console.error('Error sharing photo:', error)
+      alert("Could not share photo.")
+    }
+  }
+
+  return (
+    <div className="focusedPhoto" onClick={onClose}>
+      <button className="focusedCloseBtn" onClick={e => { e.stopPropagation(); onClose(); }}>
+        <span className="icon">close</span>
+      </button>
+
+      <div className="focusedImageWrapper" onClick={e => e.stopPropagation()}>
+        <img src={imageData.outputs[photo.id]} alt="Focused photo" />
+      </div>
+
+      <button className="prevButton button" onClick={e => { e.stopPropagation(); onPrev(); }}>
+        <span className="icon">arrow_back_ios</span>
+      </button>
+      <button className="nextButton button" onClick={e => { e.stopPropagation(); onNext(); }}>
+        <span className="icon">arrow_forward_ios</span>
+      </button>
+
+      {children}
+
+      <div className="focusedPhotoActions">
+        <button className="button shareButton" onClick={e => { e.stopPropagation(); sharePhoto(); }}>
+          <span className="icon">ios_share</span>
+        </button>
+        <div className="focusedPhotoActions-center">
+          <button className="button" onClick={e => { e.stopPropagation(); downloadPhoto(photo.id); }}>
+            <span className="icon">download</span>
+          </button>
+          <button className={c('button', {active: isFavorite})} onClick={e => {e.stopPropagation(); toggleFavorite(photo.id)}}>
+            <span className="icon">favorite</span>
+          </button>
+          <button className="button" onClick={e => { e.stopPropagation(); onMakeGif(); }}>
+            <span className="icon">gif</span>
+          </button>
+        </div>
+        <button className="button deleteButton" onClick={e => { e.stopPropagation(); deletePhoto(photo.id); onClose(); }}>
+          <span className="icon">delete</span>
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function IphoneCameraControls({
+  isStreaming,
+  latestFinishedPhoto,
+  photos,
+  galleryVisible,
+  setGalleryVisible,
+  activeMode,
+  onModeClick,
+  onShutterClick,
+  autoCapture,
+  isCountingDown,
+  isDesktop,
+  cameraMode,
+  setCameraMode,
+  facingMode,
+  setFacingMode,
+  desktopMirror,
+  setDesktopMirror,
+  stopTimers,
+  stylesVisible,
+  setStylesVisible,
+  busyPhotos,
+  setFocusedId,
+  setShowCustomPrompt,
+  customPrompt
+}) {
+  const [hoveredMode, setHoveredMode] = useState(null);
+  const [styleTooltipPos, setStyleTooltipPos] = useState({ top: 0, left: 0 });
+  const [styleBubbleText, setStyleBubbleText] = useState('');
+  const [styleBubblePos, setStyleBubblePos] = useState({ top: 0, left: 0 });
+
+  const handleModeHover = (mode, e) => {
+    if (isDesktop) {
+      setHoveredMode(mode);
+      if (mode) {
+        const rect = e.currentTarget.getBoundingClientRect();
+        setStyleTooltipPos({
+          top: rect.top - 10,
+          left: rect.left + rect.width / 2,
+        });
+      }
+    }
+  };
+  
+  const handleStyleClick = (mode, e) => {
+    onModeClick(mode)
+    if (!isDesktop) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      setStyleBubbleText(modes[mode].name);
+      setStyleBubblePos({
+        top: rect.top - 40,
+        left: rect.left + rect.width / 2,
+      });
+      setTimeout(() => setStyleBubbleText(''), 1500);
+    }
+  };
+
+  const handleCameraSwitch = () => {
+    if (isDesktop) {
+      setDesktopMirror(prev => !prev);
+    } else {
+      setFacingMode(prev => (prev === 'user' ? 'environment' : 'user'));
+    }
+  };
+  
+  const handlePreviewClick = () => {
+    if (isDesktop) {
+      setGalleryVisible(prev => !prev);
+    } else if (latestFinishedPhoto) {
+      setFocusedId(latestFinishedPhoto.id);
+    }
+  };
+
+  const isTimerActive = cameraMode === 'TIMER';
+
+  return (
+    <>
+    {isTimerActive && !autoCapture && (
+      <div className="iphoneTimerActiveDisplay">
+        <span className="icon">timer</span>
+        <span>5s</span>
+      </div>
+    )}
+    <div className="iphoneCameraControls">
+      {!isStreaming && (isDesktop ? (
+          <div className="modeRows">
+            <ul className="filterSelector">
+              <li
+                key="custom"
+                onMouseEnter={e =>
+                  handleModeHover({key: 'custom', name: 'Custom', prompt: customPrompt}, e)
+                }
+                onMouseLeave={() => handleModeHover(null)}
+              >
+                <button
+                  className={c({active: activeMode === 'custom'})}
+                  onClick={() => {
+                    onModeClick('custom');
+                    setShowCustomPrompt(true);
+                  }}
+                >
+                  <span>✏️</span> <p>Custom</p>
+                </button>
+              </li>
+              {Object.entries(modes).map(([key, {name, emoji, prompt}]) => (
+                <li
+                  key={key}
+                  onMouseEnter={e => handleModeHover({key, name, prompt}, e)}
+                  onMouseLeave={() => handleModeHover(null)}
+                >
+                  <button
+                    onClick={() => onModeClick(key)}
+                    className={c({active: key === activeMode})}
+                  >
+                    <span>{emoji}</span> <p>{name}</p>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <div className="iphoneStylesGrid">
+            {modeKeys.map(key => (
+              <button
+                key={key}
+                className={c('iphoneStyleEmojiBtn', { active: activeMode === key })}
+                onClick={(e) => handleStyleClick(key, e)}
+              >
+                {modes[key].emoji}
+              </button>
+            ))}
+          </div>
+        )
+      )}
+      
+      <div className={c("iphoneCameraModesAndShutterWrapper", {streaming: isStreaming})}>
+        {!isStreaming && (
+            <div className="iphoneCameraModes">
+              <button
+                className={c('iphoneModeBtn', { active: cameraMode === 'STREAM' })}
+                onClick={() => setCameraMode('STREAM')}
+              >
+                STREAM
+              </button>
+              <button
+                className={c('iphoneModeBtn', { active: cameraMode === 'PHOTO' })}
+                onClick={() => setCameraMode('PHOTO')}
+              >
+                PHOTO
+              </button>
+              <button
+                className={c('iphoneModeBtn', { active: cameraMode === 'POSTCARD' })}
+                onClick={() => setCameraMode('POSTCARD')}
+              >
+                POSTCARD
+              </button>
+              <button
+                className={c('iphoneModeBtn', { active: cameraMode === 'TIMER' })}
+                onClick={() => setCameraMode('TIMER')}
+              >
+                TIMER
+              </button>
+            </div>
+        )}
+        
+        <div className="iphoneCameraBottom">
+          <div className="iphonePhotoPreview">
+            {latestFinishedPhoto ? (
+              <button className="iphonePreviewBtn" onClick={handlePreviewClick}>
+                <img className="iphonePreviewImg" src={imageData.outputs[latestFinishedPhoto.id]} alt="Latest photo preview" />
+                {busyPhotos.length > 0 && <div className="queue-counter">{busyPhotos.length}</div>}
+              </button>
+            ) : (
+              photos.length === 0 ? <div className="iphonePhotoPreview-placeholder"/> :
+              <button className="iphonePreviewEmpty" onClick={handlePreviewClick}>
+                <span className="icon">photo_library</span>
+                {busyPhotos.length > 0 && <div className="queue-counter">{busyPhotos.length}</div>}
+              </button>
+            )}
+          </div>
+
+          <div className="iphoneCameraShutter">
+            <button
+              className={c('iphoneShutterBtn', { recording: autoCapture })}
+              onClick={onShutterClick}
+              disabled={isCountingDown}
+            >
+              <div className={c('iphoneShutterInner', { recording: autoCapture })} />
+            </button>
+          </div>
+
+          <div className="iphoneCameraSwitch">
+             <button className="iphoneSwitchBtn" onClick={handleCameraSwitch}>
+              <span className="icon">
+                {isDesktop ? 'flip_camera_android' : (facingMode === 'user' ? 'cameraswitch' : 'flip_camera_android')}
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    {hoveredMode && isDesktop && (
+      <div
+        className="tooltip"
+        style={{
+          top: styleTooltipPos.top,
+          left: styleTooltipPos.left,
+        }}
+      >
+        <p>{hoveredMode.name}</p>
+      </div>
+    )}
+      
+    {styleBubbleText && !isDesktop && (
+      <div
+        className="styleBubble"
+        style={{
+          top: styleBubblePos.top,
+          left: styleBubblePos.left,
+        }}
+    >
+      {styleBubbleText}
+    </div>
+    )}
+  </>
   )
 }

@@ -20,10 +20,9 @@ export default createSelectorFunctions(
       customPrompt: '',
       model: 'gemini-2.5-flash-image-preview',
       randomStyleIndex: 0,
-      cameraMode: 'PHOTO', // 'PHOTO', 'NONSTOP', 'POSTCARD', 'TIMER'
+      cameraMode: 'PHOTO', // 'PHOTO', 'STREAM', 'POSTCARD', 'TIMER'
       liveMode: false,
       replayMode: false,
-      justSavedIds: [],
       lastError: null
     }))
   )

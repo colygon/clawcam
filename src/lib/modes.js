@@ -247,7 +247,7 @@ export default {
   kampala: {
     name: 'Kampala',
     emoji: '🦒',
-    prompt: 'Place the person or people sitting on top of a safari vehicle in a beautiful Ugandan savanna. It is crucial to preserve their exact facial features, expressions, and character. Have a single majestic giraffe walking gracefully by in the background against a realistic African sky. Dress the people in comfortable, stylish safari gear. The scene should be bathed in the warm, golden light of late afternoon, creating soft shadows. Apply all changes consistently to everyone, maintaining character consistency. Ensure all figures are portrayed in a flattering, natural, and realistic way.',
+    prompt: 'Create a highly realistic, close-up portrait photograph of the person on a real safari in Uganda. It is crucial to preserve their exact facial features, expressions, and character. They should be dressed in comfortable, stylish safari gear. The background should be a beautiful Ugandan savanna with a single majestic giraffe walking gracefully by in the distance, softly blurred. The scene must be bathed in the warm, golden light of late afternoon, creating soft, realistic shadows. The final image must look like a professional photograph taken with a DSLR camera, not a digital creation. Apply all changes consistently to everyone, maintaining character consistency. Ensure all figures are portrayed in a flattering, natural, and realistic way.',
     category: 'location',
     postcardText: 'Safari greetings from Uganda!'
   },
@@ -537,7 +537,7 @@ export default {
   lion: {
     name: 'Lion Kingdom',
     emoji: '🦁',
-    prompt: 'Create a powerful and immersive scene where the person or people are in the African savanna at sunset. They are standing a tense but safe distance across from a majestic lion, staring directly into its eyes. It is crucial to preserve their exact facial features, expressions, and character, capturing a sense of awe and respect. The entire scene, including the people, should be bathed in the warm, golden light of the setting sun, with long shadows cast on the grassy plains. If there are multiple people, have them all stand together, facing the lion with consistent lighting and character consistency.',
+    prompt: 'Create an extremely realistic, close-up photograph of the person next to a majestic wild lion in the African savanna. It is crucial to preserve their exact facial features, expressions, and character, capturing a sense of awe and respect in their expression. The lion should be calmly sitting or standing beside them. The entire scene, including the person and the lion, must be bathed in the warm, golden light of a setting sun, creating soft, realistic shadows. The final image must be indistinguishable from a real, professional photograph. If there are multiple people, place them together with the lion in a composition that feels natural and consistent.',
     category: 'animal',
     postcardText: 'King of the Savanna'
   },

@@ -12,7 +12,7 @@
     "@google/genai": "latest",
     "auto-zustand-selectors-hook": "latest",
     "clsx": "latest",
-    "gifenc": "latest",
+    "gifenc": "1.0.3",
     "immer": "latest",
     "lodash.shuffle": "latest",
     "p-limit": "latest",

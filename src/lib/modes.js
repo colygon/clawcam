@@ -72,7 +72,7 @@ export default {
   suzhou: {
     name: 'Suzhou',
     emoji: '🏞️',
-    prompt: 'Place the person or people in one of the classical gardens of Suzhou, famous for its elegant pagodas, rock formations, and serene ponds. It is crucial to preserve their exact facial features, expressions, and character. Dress them in beautiful, traditional Chinese attire (like Hanfu), as if they are there for a photoshoot. The lighting should be soft and picturesque, highlighting the beauty of the garden. Apply all changes consistently to everyone, maintaining character consistency.',
+    prompt: 'Place the person or people in one of the classical gardens of Suzhou (pronounced "Soo-joe"), China, famous for its elegant pagodas, rock formations, and serene ponds. Suzhou is a historic city in Jiangsu Province known for its UNESCO World Heritage classical Chinese gardens. It is crucial to preserve their exact facial features, expressions, and character. Dress them in beautiful, traditional Chinese attire (like Hanfu), as if they are there for a photoshoot. The lighting should be soft and picturesque, highlighting the beauty of the garden. Apply all changes consistently to everyone, maintaining character consistency.',
     category: 'location',
     postcardText: 'Timeless beauty from Suzhou'
   },

@@ -311,11 +311,12 @@ export default function App() {
       setIsCountingDown(true)
 
       const timerTick = () => {
-        count--
-        setCountdown(count > 0 ? count : null)
-        if (count > 0) {
+        if (count > 1) {
+          count--
+          setCountdown(count)
           countdownTimerRef.current = setTimeout(timerTick, 1000)
         } else {
+          setCountdown(null)
           setIsCountingDown(false)
           takePhoto(null)
         }

@@ -52,6 +52,14 @@ export default {
     postcardText: 'Hello from New York City!'
   },
   
+  blackrock: {
+    name: 'Black Rock',
+    emoji: '🔥',
+    prompt: 'Place the person or people at Burning Man in the Black Rock City desert. It is crucial to preserve their exact facial features, expressions, and character. Dress them in creative festival attire, including goggles and bandanas. Create realistic, harsh shadows from the desert sun and reflections from colorful art installations. The lighting should be atmospheric, as if filtered through dust. Apply styling consistently to all individuals, maintaining character consistency.',
+    category: 'location',
+    postcardText: 'Welcome Home!'
+  },
+  
   paris: {
     name: 'Paris',
     emoji: '🗼',
@@ -137,14 +145,6 @@ export default {
     prompt: 'Place the person or people in Iceland\'s famous Blue Lagoon geothermal spa. It is crucial to maintain their exact facial features, expressions, and character. Dress them in cozy winter clothing or spa attire. The lighting should be soft and diffuse, as if on a cool, overcast day, with ethereal blue and white reflections from the milky water and steam. Ensure the mystical lighting and character styling is applied consistently to everyone.',
     category: 'location',
     postcardText: 'Chilling in Iceland ❄️'
-  },
-  
-  blackrock: {
-    name: 'Black Rock',
-    emoji: '🔥',
-    prompt: 'Place the person or people at Burning Man in the Black Rock City desert. It is crucial to preserve their exact facial features, expressions, and character. Dress them in creative festival attire, including goggles and bandanas. Create realistic, harsh shadows from the desert sun and reflections from colorful art installations. The lighting should be atmospheric, as if filtered through dust. Apply styling consistently to all individuals, maintaining character consistency.',
-    category: 'location',
-    postcardText: 'Welcome Home!'
   },
   
   hollywood: {

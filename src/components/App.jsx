@@ -985,20 +985,22 @@ function IphoneCameraControls({
         )}
         
         <div className="iphoneCameraBottom">
-          <div className="iphonePhotoPreview">
-            {latestFinishedPhoto ? (
-              <button className="iphonePreviewBtn" onClick={handlePreviewClick}>
-                <img className="iphonePreviewImg" src={imageData.outputs[latestFinishedPhoto.id]} alt="Latest photo preview" />
-                {busyPhotos.length > 0 && <div className="queue-counter">{busyPhotos.length}</div>}
-              </button>
-            ) : (
-              photos.length === 0 ? <div className="iphonePhotoPreview-placeholder"/> :
-              <button className="iphonePreviewEmpty" onClick={handlePreviewClick}>
-                <span className="icon">photo_library</span>
-                {busyPhotos.length > 0 && <div className="queue-counter">{busyPhotos.length}</div>}
-              </button>
-            )}
-          </div>
+          {!hideControls && (
+            <div className="iphonePhotoPreview">
+              {latestFinishedPhoto ? (
+                <button className="iphonePreviewBtn" onClick={handlePreviewClick}>
+                  <img className="iphonePreviewImg" src={imageData.outputs[latestFinishedPhoto.id]} alt="Latest photo preview" />
+                  {busyPhotos.length > 0 && <div className="queue-counter">{busyPhotos.length}</div>}
+                </button>
+              ) : (
+                photos.length === 0 ? <div className="iphonePhotoPreview-placeholder"/> :
+                <button className="iphonePreviewEmpty" onClick={handlePreviewClick}>
+                  <span className="icon">photo_library</span>
+                  {busyPhotos.length > 0 && <div className="queue-counter">{busyPhotos.length}</div>}
+                </button>
+              )}
+            </div>
+          )}
 
           <div className="iphoneCameraShutter">
             <button

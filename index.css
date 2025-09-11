@@ -1622,6 +1622,73 @@ main:not(:has(.focusedPhoto)) .photoSelector {
   height: 100%;
   object-fit: cover;
 }
+.errorToast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+.errorToast.visible {
+  opacity: 1;
+  pointer-events: auto;
+  bottom: 120px;
+}
+.errorToastContent {
+  background: rgba(220, 38, 38, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: white;
+  padding: 16px 20px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 8px 32px rgba(220, 38, 38, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  max-width: 400px;
+  min-width: 300px;
+}
+.errorToastContent .icon:first-child {
+  color: #fecaca;
+  font-size: 20px;
+}
+.errorMessage {
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.errorToastClose {
+  padding: 4px;
+  border-radius: 6px;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+.errorToastClose:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+}
+.errorToastClose .icon {
+  font-size: 18px;
+}
+@media (max-width: 768px) {
+  .errorToast {
+    bottom: 80px;
+    left: 20px;
+    right: 20px;
+    transform: none;
+  }
+  .errorToast.visible {
+    bottom: 100px;
+  }
+  .errorToastContent {
+    max-width: none;
+    min-width: auto;
+  }
+}
 .pipWebcam {
   position: absolute;
   top: 20px;

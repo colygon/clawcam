@@ -27,7 +27,8 @@ import {
   selectAllPhotos,
   init,
   setCameraMode,
-  downloadPhoto
+  downloadPhoto,
+  clearLastError
 } from '../lib/actions'
 import useStore from '../lib/store'
 import imageData from '../lib/imageData'
@@ -48,6 +49,7 @@ export default function App() {
   const liveMode = useStore.use.liveMode()
   const replayMode = useStore.use.replayMode()
   const cameraMode = useStore.use.cameraMode()
+  const lastError = useStore.use.lastError()
 
   const [videoActive, setVideoActive] = useState(false)
   const [focusedId, setFocusedId] = useState(null)
@@ -598,6 +600,13 @@ export default function App() {
         setShowCustomPrompt={setShowCustomPrompt}
         customPrompt={customPrompt}
       />
+      
+      {lastError && (
+        <ErrorToast 
+          error={lastError} 
+          onClose={clearLastError} 
+        />
+      )}
     </main>
   )
 }
@@ -1026,5 +1035,56 @@ function IphoneCameraControls({
     </div>
     )}
   </>
+  )
+}
+
+function ErrorToast({ error, onClose }) {
+  const [isVisible, setIsVisible] = useState(false)
+  
+  useEffect(() => {
+    if (error) {
+      setIsVisible(true)
+      // Auto-dismiss after 5 seconds
+      const timer = setTimeout(() => {
+        setIsVisible(false)
+        setTimeout(onClose, 300) // Wait for fade out animation
+      }, 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [error, onClose])
+  
+  const handleClose = () => {
+    setIsVisible(false)
+    setTimeout(onClose, 300)
+  }
+  
+  if (!error) return null
+  
+  const getFriendlyMessage = (error) => {
+    if (error.message?.includes('Aborted') || error.message?.includes('aborted')) {
+      return 'Photo generation was cancelled'
+    }
+    if (error.message?.includes('API')) {
+      return 'Having trouble connecting to our AI service. Please try again.'
+    }
+    if (error.message?.includes('content restrictions')) {
+      return 'This image couldn\'t be processed due to content guidelines'
+    }
+    if (error.message?.includes('No image was generated')) {
+      return 'Unable to generate image. Please check your connection and try again.'
+    }
+    return 'Something went wrong while creating your image. Please try again.'
+  }
+  
+  return (
+    <div className={c('errorToast', { visible: isVisible })}>
+      <div className="errorToastContent">
+        <span className="icon">error</span>
+        <span className="errorMessage">{getFriendlyMessage(error)}</span>
+        <button className="errorToastClose" onClick={handleClose}>
+          <span className="icon">close</span>
+        </button>
+      </div>
+    </div>
   )
 }

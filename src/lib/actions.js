@@ -196,7 +196,7 @@ export const snapPhoto = async (b64, signal) => {
         }
       })
       
-      alert(result ? 'Generated content was not a valid image. This might be due to content restrictions or API issues.' : 'No image was generated. Please check your API configuration.')
+      // Error is now shown via UI toast instead of alert
       
       // If result is undefined or invalid, remove the photo
       await deletePhoto(id)
@@ -222,9 +222,7 @@ export const snapPhoto = async (b64, signal) => {
       };
     });
 
-    alert(
-      `Error generating photo: ${errorMessage}`
-    );
+    // Error is now shown via UI toast instead of alert
 
     // On error, remove the placeholder
     await deletePhoto(id);
@@ -358,7 +356,14 @@ export const makeGif = async () => {
     })
   } catch (error) {
     console.error('Error creating GIF:', error)
-    alert(`Error creating GIF:\n${error.message}`);
+    // Set error for UI toast
+    set(state => {
+      state.lastError = {
+        message: `Error creating GIF: ${error.message}`,
+        timestamp: Date.now(),
+        type: 'gif_error'
+      }
+    })
     return null
   } finally {
     set(state => {

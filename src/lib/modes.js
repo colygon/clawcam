@@ -39,7 +39,7 @@ export default {
   golden_gate: {
     name: 'Golden Gate',
     emoji: '🌉',
-    prompt: 'Place the person or people in front of the Golden Gate Bridge in San Francisco. It is crucial to keep their exact facial features, expressions, and character. Dress them in casual SF style like hoodies or light jackets. Ensure their outfits are modern and do not include skinny jeans, turtlenecks, or crossbody purses for women. Create realistic shadows and lighting that match a foggy, misty day in the Bay Area, with subtle reflections of the bridge\'s color on their clothing. Apply all changes consistently if there are multiple people.',
+    prompt: 'Place the person or people with a breathtaking view of the complete Golden Gate Bridge spanning majestically across San Francisco Bay. The iconic International Orange bridge should be fully visible in all its glory, stretching from tower to tower against the sky. It is crucial to preserve their exact facial features, expressions, and character. Dress them in casual SF style like hoodies or light jackets. Below the bridge, show the beautiful San Francisco Bay filled with white sailboats gliding gracefully through the water and large container ships and tankers moving through the shipping lanes. The scene should capture the dynamic maritime activity that makes the bay so alive. The lighting should be clear and bright, showcasing both the architectural magnificence of the bridge and the bustling waterway beneath it. Apply all changes consistently to everyone.',
     category: 'location',
     postcardText: 'Greetings from the Golden Gate!'
   },

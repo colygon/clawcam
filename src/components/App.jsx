@@ -523,7 +523,7 @@ export default function App() {
                   }
                 } catch (error) {
                   console.error('Error sharing GIF:', error)
-                  alert("Could not share GIF.")
+                  // Silently fail - sharing is optional functionality
                 }
               }}
             >
@@ -764,7 +764,7 @@ function FocusedPhoto({photo, onClose, isFavorite, children, onMakeGif, onPrevio
       }
     } catch (error) {
       console.error('Error sharing photo:', error)
-      alert("Could not share photo.")
+      // Silently fail - sharing is optional functionality
     }
   }
 

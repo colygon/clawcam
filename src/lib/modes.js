@@ -62,6 +62,29 @@ export default {
     postcardText: 'こんにちは from Tokyo!'
   },
   
+  kyoto: {
+    name: 'Kyoto',
+    emoji: '🏮',
+    prompt: 'Place the person or people in modern-day Kyoto as tourists visiting the historic sites. Preserve their exact facial features, expressions, and keep their current clothing exactly as it is - do not change their outfits at all. Place them in authentic Kyoto locations like the famous bamboo groves of Arashiyama, the iconic orange torii gates of Fushimi Inari shrine, traditional temple courtyards with wooden architecture, or scenic paths lined with cherry blossom trees. The lighting should be natural daylight as if they are sightseeing, with realistic shadows and the warm, golden light filtering through bamboo or reflecting off traditional Japanese architecture. Include background details like stone lanterns, temple roofs, other tourists in the distance, and the serene atmosphere of historic Kyoto, making it look like a genuine travel photo.',
+    category: 'location'
+  },
+  
+  suzhou: {
+    name: 'Suzhou',
+    emoji: '🏞️',
+    prompt: 'Place the person or people in one of the classical gardens of Suzhou, famous for its elegant pagodas, rock formations, and serene ponds. It is crucial to preserve their exact facial features, expressions, and character. Dress them in beautiful, traditional Chinese attire (like Hanfu), as if they are there for a photoshoot. The lighting should be soft and picturesque, highlighting the beauty of the garden. Apply all changes consistently to everyone, maintaining character consistency.',
+    category: 'location',
+    postcardText: 'Timeless beauty from Suzhou'
+  },
+
+  shanghai: {
+    name: 'Shanghai',
+    emoji: '🏙️',
+    prompt: 'Place the person or people on the Bund in Shanghai at night, with the futuristic skyline of Pudong, including the iconic Oriental Pearl TV Tower, glowing in the background. It is crucial to preserve their exact facial features, expressions, and character. Dress them in chic, modern, cosmopolitan fashion. The scene should be illuminated by the vibrant city lights, creating colorful reflections on the Huangpu River and the people. Apply all changes consistently to everyone, maintaining character consistency.',
+    category: 'location',
+    postcardText: 'Greetings from Shanghai!'
+  },
+  
   london: {
     name: 'London',
     emoji: '👑',
@@ -403,44 +426,6 @@ export default {
     prompt: 'Transform the person or people in the photo into Na\'vi from the movie Avatar. Give them blue skin, large amber eyes, facial markings, and pointed ears, but it is crucial to keep their key facial features, expressions, and character so they are still recognizable. If there are multiple people, transform them all consistently for character consistency. Place them in the lush, bioluminescent forest of Pandora.',
     category: 'character',
     postcardText: 'Greetings from Pandora!'
-  },
-
-  tokyo: {
-    name: 'Tokyo',
-    emoji: '🏯',
-    prompt: 'Place the person or people in a vibrant Tokyo street scene with colorful neon signs. It is crucial to preserve their exact facial features, expressions, and character. Dress them in modern Japanese street fashion. Create realistic shadows and colorful reflections from the neon lights on their clothing and skin. Ensure the dynamic lighting and styling are applied consistently to everyone in the photo with character consistency.',
-    category: 'location'
-  },
-
-  kyoto: {
-    name: 'Kyoto',
-    emoji: '🏮',
-    prompt: 'Place the person or people in modern-day Kyoto as tourists visiting the historic sites. Preserve their exact facial features, expressions, and keep their current clothing exactly as it is - do not change their outfits at all. Place them in authentic Kyoto locations like the famous bamboo groves of Arashiyama, the iconic orange torii gates of Fushimi Inari shrine, traditional temple courtyards with wooden architecture, or scenic paths lined with cherry blossom trees. The lighting should be natural daylight as if they are sightseeing, with realistic shadows and the warm, golden light filtering through bamboo or reflecting off traditional Japanese architecture. Include background details like stone lanterns, temple roofs, other tourists in the distance, and the serene atmosphere of historic Kyoto, making it look like a genuine travel photo.',
-    category: 'location'
-  },
-
-  suzhou: {
-    name: 'Suzhou',
-    emoji: '🏞️',
-    prompt: 'Place the person or people in one of the classical gardens of Suzhou, famous for its elegant pagodas, rock formations, and serene ponds. It is crucial to preserve their exact facial features, expressions, and character. Dress them in beautiful, traditional Chinese attire (like Hanfu), as if they are there for a photoshoot. The lighting should be soft and picturesque, highlighting the beauty of the garden. Apply all changes consistently to everyone, maintaining character consistency.',
-    category: 'location',
-    postcardText: 'Timeless beauty from Suzhou'
-  },
-
-  shanghai: {
-    name: 'Shanghai',
-    emoji: '🏙️',
-    prompt: 'Place the person or people in a bustling night market along the Bund in Shanghai, with the futuristic skyline of Pudong glowing in the background. It is crucial to preserve their exact facial features, expressions, and character. Dress them in chic, modern, cosmopolitan fashion. The scene should be illuminated by the vibrant city lights from the skyline and colorful lanterns from the market stalls, creating a lively atmosphere with colorful reflections. Apply all changes consistently to everyone, maintaining character consistency.',
-    category: 'location',
-    postcardText: 'Greetings from Shanghai!'
-  },
-
-  shanghai: {
-    name: 'Shanghai',
-    emoji: '🏙️',
-    prompt: 'Place the person or people on the Bund in Shanghai at night, with the futuristic skyline of Pudong, including the iconic Oriental Pearl TV Tower, glowing in the background. It is crucial to preserve their exact facial features, expressions, and character. Dress them in chic, modern, cosmopolitan fashion. The scene should be illuminated by the vibrant city lights, creating colorful reflections on the Huangpu River and the people. Apply all changes consistently to everyone, maintaining character consistency.',
-    category: 'location',
-    postcardText: 'Greetings from Shanghai!'
   },
 
   corn: {

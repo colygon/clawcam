@@ -8,7 +8,6 @@ import {
   SignedIn,
   SignedOut,
   SignInButton,
-  SignUpButton,
   UserButton,
 } from '@clerk/clerk-react'
 import {
@@ -362,24 +361,27 @@ export default function App() {
         liveMode: liveMode
       })}
     >
-      <header style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 1000 }}>
+      <header style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 9999 }}>
         <SignedOut>
           <SignInButton mode="modal">
             <button style={{
-              background: 'rgba(44, 44, 46, 0.8)',
-              backdropFilter: 'blur(10px)',
-              WebkitBackdropFilter: 'blur(10px)',
+              background: 'rgba(0, 0, 0, 0.75)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
               color: 'white',
-              border: 'none',
-              borderRadius: '50%',
-              width: '56px',
-              height: '56px',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              borderRadius: '12px',
+              padding: '10px 16px',
               cursor: 'pointer',
               fontSize: '14px',
-              fontWeight: '500',
+              fontWeight: '600',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              fontFamily: 'inherit',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+              minWidth: '80px'
             }}>
               Sign In
             </button>
@@ -597,6 +599,7 @@ export default function App() {
         isCountingDown={isCountingDown}
         isDesktop={isDesktop}
         cameraMode={cameraMode}
+        hideControls={hideControls}
         setCameraMode={setCameraMode}
         facingMode={facingMode}
         setFacingMode={setFacingMode}
@@ -843,7 +846,8 @@ function IphoneCameraControls({
   busyPhotos,
   setFocusedId,
   setShowCustomPrompt,
-  customPrompt
+  customPrompt,
+  hideControls
 }) {
   const [hoveredMode, setHoveredMode] = useState(null);
   const [styleTooltipPos, setStyleTooltipPos] = useState({ top: 0, left: 0 });
@@ -950,6 +954,16 @@ function IphoneCameraControls({
                 {modes[key].emoji}
               </button>
             ))}
+            <button
+              key="custom"
+              className={c('iphoneStyleEmojiBtn', { active: activeMode === 'custom' })}
+              onClick={() => {
+                onModeClick('custom');
+                setShowCustomPrompt(true);
+              }}
+            >
+              ✏️
+            </button>
           </div>
         )
       )}

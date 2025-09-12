@@ -99,6 +99,7 @@ export default {
     postcardText: 'Greetings from Shanghai!'
   },
   
+  
   london: {
     name: 'London',
     emoji: '👑',
@@ -850,5 +851,29 @@ export default {
     prompt: "Transform the person or people into heroic medieval warriors on a battlefield. It is crucial to preserve their exact facial features, expressions, and character. Dress them in weathered, highly-detailed armor decorated with intricate metal royal crests. The lighting should be that of an early morning duel, with soft light and dynamic shadows. The background should be vast hills with flags and banners fluttering in the wind. The final image should be a masterpiece: ultra-realistic, RAW, 16K, ultra-high definition, with sharp focus, and top theater lighting. Ensure perfect character consistency for all individuals. This prompt should work for any gender.",
     category: 'entertainment',
     postcardText: 'For honor and glory!'
+  },
+  
+  ibiza: {
+    name: 'IBIZA',
+    emoji: '🎛️',
+    prompt: 'Place the person or people at a massive outdoor all-white party in Ibiza under the stars. It is crucial to preserve their exact facial features, expressions, and character. Dress them in stylish all-white party attire - white flowing dresses, white linen shirts, white shorts, white crop tops - everything must be pristine white. Surround them with thousands of other party-goers also dressed entirely in white, creating a sea of white clothing. The setting should be a luxurious beachside venue with white decor, white furniture, and white fabric draping. Include towering DJ stages with white LED screens and white lighting effects. The scene should be highly realistic and photographic, as if taken with a professional camera at a real Ibiza white party. The lighting should be warm and golden from string lights and torches, creating beautiful shadows and highlights on all the white clothing. Apply all changes consistently to everyone, maintaining character consistency.',
+    category: 'location',
+    postcardText: 'All white everything in Ibiza!'
+  },
+  
+  berlin: {
+    name: 'BERLIN',
+    emoji: '🔊',
+    prompt: 'Create a highly realistic, gritty photograph of the person or people inside the legendary Berghain nightclub in Berlin. It is crucial to preserve their exact facial features, expressions, and character. Dress them in authentic all-black underground techno attire - black leather harnesses, black mesh tops, dark denim, heavy boots, industrial accessories. The setting must be the actual concrete brutalist interior of Berghain with its impossibly high ceilings, raw concrete walls, and stark industrial architecture. The atmosphere should be intensely dark and claustrophobic with heavy shadows, minimal red safety lighting, and thick fog creating an almost impenetrable haze. Other clubbers should be barely visible silhouettes in the darkness, dancing to pounding techno beats. The lighting should be extremely minimal and realistic - just dim red emergency lights, occasional camera flashes, and the faintest glow from DJ equipment, creating deep black shadows and harsh contrasts. The final image must look like a real photograph taken inside this legendary venue. Apply all changes consistently to everyone, maintaining character consistency.',
+    category: 'location',
+    postcardText: 'Lost in the underground'
+  },
+  
+  zhangjiajie: {
+    name: 'Zhangjiajie',
+    emoji: '🏔️',
+    prompt: 'Create a breathtakingly realistic photograph of the person or people at Zhangjiajie National Forest Park in China, standing on the famous glass bridge or viewing platform with the iconic towering sandstone pillar mountains in the background. It is crucial to preserve their exact facial features, expressions of awe, and character. Dress them in comfortable hiking attire suitable for exploring the park - lightweight outdoor clothing, hiking boots, and backpacks. The scene must capture the otherworldly landscape of thousands of vertical sandstone pillars rising dramatically from the misty valleys below, covered in lush green vegetation. The atmosphere should be mystical with natural fog and mist weaving between the towering rock formations, creating a dreamlike quality. The lighting should be soft and diffused, as if during early morning or late afternoon, with golden sunlight filtering through the mist and casting ethereal glows on the rock faces and vegetation. Include other tourists in the background for scale, showing the massive scale of these geological wonders. The final image must look like a professional travel photograph taken at this UNESCO World Heritage site. Apply all changes consistently to everyone, maintaining perfect character consistency.',
+    category: 'location',
+    postcardText: 'Floating mountains of Avatar!'
   }
 }

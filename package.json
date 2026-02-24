@@ -1,5 +1,5 @@
 {
-  "name": "banana-cam",
+  "name": "claw-cam",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.46.2",
-    "@google/genai": "latest",
     "auto-zustand-selectors-hook": "latest",
     "clsx": "latest",
     "gifenc": "1.0.3",

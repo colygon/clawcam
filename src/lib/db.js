@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
-const DB_NAME = 'BananaCamDB';
+const DB_NAME = 'ClawCamDB';
 const DB_VERSION = 1;
 const STORES = {
   INPUTS: 'inputs',

@@ -1,20 +1,32 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Claw Cam
 
-# Run and deploy your AI Studio app
+Claw Cam is a live camera-first photo transformation app.
 
-This contains everything you need to run your app locally.
-
-View your app in AI Studio: https://ai.studio/apps/drive/1Iu0sCyYPSYnrvde7Ygi5N3bTcl5tH0hv
-
-## Run Locally
-
-**Prerequisites:**  Node.js
-
+## Local setup
 
 1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+
+```bash
+npm install
+```
+
+2. Set required env values in `.env.local`:
+
+- `VITE_OPENCLAW_AGENT_ENDPOINT` (required): OpenClaw endpoint that accepts `{ prompt, image }`
+- `VITE_OPENCLAW_AGENT_TOKEN` (optional): Bearer token for the endpoint
+
+3. Run:
+
+```bash
+npm run dev
+```
+
+## How image generation works now
+
+`src/lib/llm.js` now sends each captured image plus style instructions to the configured OpenClaw agent endpoint.
+
+Expected API response format (any of):
+- `{ "image": "data:image/png;base64,..." }`
+- `{ "image": "<base64>" }`
+- `{ "imageUrl": "..." }`
+- `{ "result": "..." }`

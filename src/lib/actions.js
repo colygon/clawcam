@@ -456,7 +456,7 @@ export const downloadPhoto = id => {
   }
   const link = document.createElement('a')
   link.href = dataUrl
-  link.download = `bananacam-${id}.png`
+  link.download = `clawcam-${id}.png`
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)

@@ -1,6 +1,6 @@
 {
-  "name": "Banana Cam",
-  "description": "Transform yourself with AI magic in real-time using your webcam. Visit www.banana.cam",
+  "name": "Claw Cam",
+  "description": "Transform yourself with AI magic in real-time using your webcam. Visit www.claw.cam",
   "requestFramePermissions": [
     "camera"
   ]

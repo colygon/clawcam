@@ -522,13 +522,13 @@ export default function App() {
                 try {
                   const response = await fetch(gifUrl)
                   const blob = await response.blob()
-                  const file = new File([blob], 'banana-cam.gif', {type: 'image/gif'})
+                  const file = new File([blob], 'claw-cam.gif', {type: 'image/gif'})
                   
                   if (navigator.canShare && navigator.canShare({files: [file]})) {
                     await navigator.share({
                       files: [file],
-                      title: 'Banana Cam GIF',
-                      text: 'Check out this GIF I made with Banana Cam! Visit www.banana.cam to make your own.'
+                      title: 'Claw Cam GIF',
+                      text: 'Check out this GIF I made with Claw Cam! Visit www.claw.cam to make your own.'
                     })
                   } else {
                     alert("Sharing not supported on this browser.")
@@ -552,7 +552,7 @@ export default function App() {
               onClick={() => {
                 const link = document.createElement('a')
                 link.href = gifUrl
-                link.download = 'banana-cam.gif'
+                link.download = 'claw-cam.gif'
                 document.body.appendChild(link)
                 link.click()
                 document.body.removeChild(link)
@@ -768,7 +768,7 @@ function FocusedPhoto({photo, onClose, isFavorite, children, onMakeGif, onPrevio
       
       const shareData = {
         files: [file],
-        text: `${postcardMessage}\nI took this photo with Banana Cam - visit www.banana.cam to try it yourself!`,
+        text: `${postcardMessage}\nI took this photo with Claw Cam - visit www.claw.cam to try it yourself!`,
       }
       if (navigator.canShare && navigator.canShare(shareData)) {
         await navigator.share(shareData)

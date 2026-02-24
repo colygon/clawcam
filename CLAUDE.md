@@ -20,11 +20,12 @@ npm run preview
 ```
 
 ### API Configuration
-Before running the app, you need a Google Gemini API key:
-1. Get an API key from [Google AI Studio](https://aistudio.google.com/apikey)
-2. The key can be configured via the UI settings panel or set in `.env.local`:
+Before running the app, configure an OpenClaw endpoint that handles image transforms:
+1. Deploy your OpenClaw endpoint so it accepts a JSON POST with `{ "image", "prompt" }`.
+2. Set environment in `.env.local`:
    ```
-   GEMINI_API_KEY=your_api_key_here
+   VITE_OPENCLAW_AGENT_ENDPOINT=http://localhost:8787/agent-run
+   VITE_OPENCLAW_AGENT_TOKEN=<optional token>
    ```
 
 ### Authentication (Clerk)
@@ -40,7 +41,7 @@ The app uses Clerk for user authentication:
 
 ## Architecture
 
-This is a React single-page application that transforms webcam photos using Google's Gemini AI. The codebase uses a modular architecture with Zustand for state management and Vite as the build tool.
+This is a React single-page application that transforms webcam photos through an OpenClaw agent. The codebase uses a modular architecture with Zustand for state management and Vite as the build tool.
 
 ### Core Modules
 
@@ -51,10 +52,9 @@ This is a React single-page application that transforms webcam photos using Goog
   - `makeGif()`: Creates animated GIFs from photo collection
   - `savePhotos()`/`loadPhotos()`: Manages localStorage persistence
 
-- **`src/lib/llm.js`**: Google Gemini AI integration with:
-  - Multi-key rotation for rate limit management
+- **`src/lib/llm.js`**: OpenClaw agent integration with:
+  - Sends captures + transformation instructions to the configured endpoint
   - Concurrent request limiting (max 2)
-  - Retry logic with exponential backoff
   - AbortController support for cancellation
 
 - **`src/lib/imageData.js`**: In-memory storage for base64 encoded images, separated into `inputs` (webcam captures) and `outputs` (AI generated).
@@ -68,10 +68,7 @@ This is a React single-page application that transforms webcam photos using Goog
 - **Image Processing**: Webcam → Canvas (640x480) → Base64 JPEG → AI API → Base64 PNG response
 - **Concurrency Control**: Uses `p-limit` to restrict simultaneous AI requests to 2
 - **Memory Management**: Automatically removes old photos when count exceeds 10
-- **API Key Rotation**: Automatic rotation through 4 backup API keys to handle rate limits
-  - Keys are tried sequentially until one succeeds
-  - Detailed logging shows which key is being used and rotation status
-  - Rate limit detection with fallback to next available key
+- **Agent routing**: Request is sent to the configured OpenClaw endpoint via JSON POST with the frame and prompt
 - **GIF Generation**: Client-side using `gifenc` library, processes up to 5 recent images at 512x512
 
 ### State Flow

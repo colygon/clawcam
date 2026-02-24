@@ -405,12 +405,12 @@ export default {
     postcardText: 'Fear the Beard!'
   },
 
-  bananas: {
-    name: 'Bananas',
+  claws: {
+    name: 'Claws',
     emoji: '🍌',
-    prompt: 'Change only the clothing of the person or people in the photo to vibrant Hawaiian shirts covered with large, bright yellow banana patterns. The shirts should have a tropical, relaxed fit. It is crucial to preserve their exact facial features, expressions, and distinctive characteristics. The background should remain completely unchanged. If there are multiple people, dress them all in matching banana shirts. The banana pattern should be bold and eye-catching.',
+    prompt: 'Change only the clothing of the person or people in the photo to vibrant Hawaiian shirts covered with large, bright yellow claw patterns. The shirts should have a tropical, relaxed fit. It is crucial to preserve their exact facial features, expressions, and distinctive characteristics. The background should remain completely unchanged. If there are multiple people, dress them all in matching claw shirts. The claw pattern should be bold and eye-catching.',
     category: 'clothing',
-    postcardText: 'Gone Bananas!'
+    postcardText: 'Gone Claws!'
   },
 
   suit: {
